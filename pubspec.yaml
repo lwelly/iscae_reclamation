@@ -1,0 +1,51 @@
+name: iscae_reclamation
+description: "A new Flutter project for ISCAE Student Complaints Management System."
+
+# تمنع النشر غير المقصود للحزمة إلى pub.dev
+publish_to: 'none'
+
+# رقم إصدار التطبيق الحالي
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.10.7 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # الأيقونات الافتراضية لنظام iOS ونظام Material
+  cupertino_icons: ^1.0.8
+
+  # المكتبة الأساسية لإرسال واستقبال طلبات الـ API مع سيرفر لارافيل
+  dio: ^5.9.2
+
+  # تستخدم لاستخراج معرف الجهاز (Device Fingerprint) لحماية الحسابات عند الدخول من أجهزة جديدة
+  device_info_plus: ^13.1.0
+
+  # تخزين محلي للتوكن والإعدادات
+  shared_preferences: ^2.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # القواعد القياسية الموصى بها لكتابة كود دارت نظيف وخالٍ من التحذيرات
+  flutter_lints: ^3.0.0
+
+flutter:
+  # تفعيل نظام تصميم Material Design من جوجل
+  uses-material-design: true
+
+  # مجلد الملفات والملحقات (قم بإلغاء التعليق '#' عند إضافة صور الشعار أو الإشعارات)
+  # assets:
+  #   - assets/images/
+  #   - assets/icons/
+
+  # إعداد الخطوط المخصصة للتطبيق (مثل خط Cairo المفضل للواجهات الأكاديمية)
+  # fonts:
+  #   - family: Cairo
+  #     fonts:
+  #       - asset: assets/fonts/Cairo-Regular.ttf
+  #       - asset: assets/fonts/Cairo-Bold.ttf
+  #         weight: 700
