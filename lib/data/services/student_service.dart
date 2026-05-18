@@ -95,7 +95,8 @@ class StudentService {
     }
   }
 
-  Future<void> markNotificationAsRead(int id) async {
+  // Modifié : accepte maintenant un identifiant String (UUID)
+  Future<void> markNotificationAsRead(String id) async {
     try {
       final response = await _dio.put(ApiEndpoints.readNotification(id));
       if (response.statusCode != 200) {
@@ -117,7 +118,8 @@ class StudentService {
     }
   }
 
-  Future<void> deleteNotification(int id) async {
+  // Modifié : accepte maintenant un identifiant String (UUID)
+  Future<void> deleteNotification(String id) async {
     try {
       final response = await _dio.delete(ApiEndpoints.deleteNotification(id));
       if (response.statusCode != 200) {
@@ -141,6 +143,7 @@ class StudentService {
     }
   }
 
+  // ... (Le reste du fichier concernant les modules et documents reste identique)
   Future<ProfileModel> updateProfile(Map<String, dynamic> data) async {
     try {
       final response = await _dio.put(ApiEndpoints.profile, data: data);
@@ -170,16 +173,16 @@ class StudentService {
 
   Future<void> updatePassword({
     required String currentPassword,
-    required String newPassword,
-    required String newPasswordConfirmation,
+    required String password,
+    required String passwordConfirmation,
   }) async {
     try {
       final response = await _dio.put(
         ApiEndpoints.profilePassword,
         data: {
           'current_password': currentPassword,
-          'new_password': newPassword,
-          'new_password_confirmation': newPasswordConfirmation,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
         },
       );
       if (response.statusCode != 200) {
@@ -190,7 +193,6 @@ class StudentService {
     }
   }
 
-  // ── Modules ──────────────────────────────────────────────
   Future<List<ModuleModel>> getModules({int? semestreId}) async {
     try {
       final response = await _dio.get(
@@ -207,7 +209,6 @@ class StudentService {
     }
   }
 
-  // ── Documents ──────────────────────────────────────────────
   Future<List<DocumentModel>> getDocuments({String? category}) async {
     try {
       final response = await _dio.get(

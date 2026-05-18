@@ -32,8 +32,11 @@ class ProfileController extends ChangeNotifier {
 
   // Mettre à jour le profil
   Future<bool> updateProfile({
-    String? name,
+    String? prenom,
+    String? nom,
+    String? email,
     String? phone,
+    String? adresse,
   }) async {
     _setUpdating(true);
     _hasError = false;
@@ -41,10 +44,15 @@ class ProfileController extends ChangeNotifier {
 
     try {
       final data = <String, dynamic>{};
-      if (name != null) data['name'] = name;
+      if (prenom != null) data['prenom'] = prenom;
+      if (nom != null) data['nom'] = nom;
+      if (email != null) data['email'] = email;
       if (phone != null) data['phone'] = phone;
+      if (adresse != null) data['adresse'] = adresse;
 
-      _profile = await ApiConfig().studentService.updateProfile(data);
+      await ApiConfig().studentService.updateProfile(data);
+      // Recharger le profil après la mise à jour
+      await loadProfile();
       _setUpdating(false);
       return true;
     } catch (e) {
@@ -54,13 +62,15 @@ class ProfileController extends ChangeNotifier {
   }
 
   // Mettre à jour la photo de profil
-  Future<bool> updateProfilePhoto(String photoPath) async {
+  Future<bool> updatePhoto(String photoPath) async {
     _setUpdating(true);
     _hasError = false;
     _errorMessage = null;
 
     try {
-      _profile = await ApiConfig().studentService.updateProfilePhoto(photoPath);
+      await ApiConfig().studentService.updateProfilePhoto(photoPath);
+      // Recharger le profil après la mise à jour
+      await loadProfile();
       _setUpdating(false);
       return true;
     } catch (e) {
@@ -72,8 +82,8 @@ class ProfileController extends ChangeNotifier {
   // Changer le mot de passe
   Future<bool> updatePassword({
     required String currentPassword,
-    required String newPassword,
-    required String newPasswordConfirmation,
+    required String password,
+    required String passwordConfirmation,
   }) async {
     _setUpdating(true);
     _hasError = false;
@@ -82,8 +92,8 @@ class ProfileController extends ChangeNotifier {
     try {
       await ApiConfig().studentService.updatePassword(
         currentPassword: currentPassword,
-        newPassword: newPassword,
-        newPasswordConfirmation: newPasswordConfirmation,
+        password: password,
+        passwordConfirmation: passwordConfirmation,
       );
       _setUpdating(false);
       return true;

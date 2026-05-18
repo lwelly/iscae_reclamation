@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_config.dart';
 import 'device_otp_screen.dart';
+import '../student/dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -64,6 +66,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
           // الحالة الثانية: تسجيل الدخول القياسي بنجاح
           if (result['success'] == true || result['token'] != null) {
+            // Sauvegarder le token
+            if (result['token'] != null) {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('auth_token', result['token']);
+              ApiConfig().setAuthToken(result['token']);
+            }
+            
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('تم تسجيل الدخول بنجاح!'), backgroundColor: Colors.green),
             );

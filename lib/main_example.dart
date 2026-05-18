@@ -264,9 +264,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                             color: notification.isRead ? Colors.grey : Colors.blue,
                           ),
                           title: Text(notification.title),
-                          subtitle: notification.message != null 
-                              ? Text(notification.message!, maxLines: 1, overflow: TextOverflow.ellipsis)
-                              : null,
+                          subtitle: Text(notification.body, maxLines: 1, overflow: TextOverflow.ellipsis),
                           onTap: () {
                             _controller.markNotificationAsRead(notification.id);
                           },

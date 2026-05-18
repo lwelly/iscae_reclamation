@@ -9,7 +9,7 @@ class DashboardController extends ChangeNotifier {
   List<SemestreModel> _semestres = [];
   List<NotificationModel> _notifications = [];
   Map<String, int>? _notificationCounts;
-  
+
   bool _isLoading = false;
   bool _hasError = false;
   String? _errorMessage;
@@ -83,21 +83,26 @@ class DashboardController extends ChangeNotifier {
   }
 
   // Marquer une notification comme lue
-  Future<void> markNotificationAsRead(int id) async {
+  Future<void> markNotificationAsRead(String id) async {
     try {
+      // L'API acceptant désormais un String, on lui passe directement l'id
       await ApiConfig().studentService.markNotificationAsRead(id);
-      // Mettre à jour localement
+
+      // Mettre à jour localement la liste Flutter
       final index = _notifications.indexWhere((n) => n.id == id);
       if (index != -1) {
         _notifications[index] = NotificationModel(
           id: _notifications[index].id,
-          title: _notifications[index].title,
-          message: _notifications[index].message,
           type: _notifications[index].type,
+          title: _notifications[index].title,
+          body: _notifications[index].body,
           isRead: true,
-          createdAt: _notifications[index].createdAt,
           readAt: DateTime.now().toIso8601String(),
+          channel: _notifications[index].channel,
           data: _notifications[index].data,
+          reclamationId: _notifications[index].reclamationId,
+          sentAt: _notifications[index].sentAt,
+          createdAt: _notifications[index].createdAt,
         );
         notifyListeners();
       }
@@ -113,13 +118,16 @@ class DashboardController extends ChangeNotifier {
       // Mettre à jour localement
       _notifications = _notifications.map((n) => NotificationModel(
         id: n.id,
-        title: n.title,
-        message: n.message,
         type: n.type,
+        title: n.title,
+        body: n.body,
         isRead: true,
-        createdAt: n.createdAt,
         readAt: DateTime.now().toIso8601String(),
+        channel: n.channel,
         data: n.data,
+        reclamationId: n.reclamationId,
+        sentAt: n.sentAt,
+        createdAt: n.createdAt,
       )).toList();
       notifyListeners();
     } catch (e) {
@@ -128,9 +136,11 @@ class DashboardController extends ChangeNotifier {
   }
 
   // Supprimer une notification
-  Future<void> deleteNotification(int id) async {
+  Future<void> deleteNotification(String id) async {
     try {
+      // L'API acceptant désormais un String, on lui passe directement l'id
       await ApiConfig().studentService.deleteNotification(id);
+
       _notifications.removeWhere((n) => n.id == id);
       notifyListeners();
     } catch (e) {

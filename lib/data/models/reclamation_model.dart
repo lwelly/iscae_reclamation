@@ -1,76 +1,202 @@
-enum ReclamationStatus { submitted, received, in_review, resolved, rejected, escalated }
-enum ReclamationType { controle, examen, rattrapage }
-
 class ReclamationModel {
-  final int id;
+  final String id;
   final String referenceNumber;
-  final int studentId;
-  final int moduleId;
-  final int semestreId;
-  final int? noteId;
-  final String academicYear;
-  final ReclamationType type;
-  final double? noteActuelle;
+  final String type;
+  final String typeDb;
+  final String status;
+  final double noteActuelle;
   final double? noteReclamee;
   final String justification;
-  final ReclamationStatus status;
   final String? adminResponse;
-  final DateTime? meetingScheduledAt;
-  final String? meetingLocation;
-  final DateTime createdAt;
+  final bool isEscalated;
+  final String? escalationReason;
+  final String academicYear;
+  final String createdAt;
+  final String updatedAt;
+  final String? resolvedAt;
+  final String? respondedAt;
+  final String? escalatedAt;
+  final Map<String, dynamic>? meeting;
+  final ReclamationModule module;
+  final ReclamationSemestre semestre;
+  final List<ReclamationAttachment> attachments;
+  final List<ReclamationHistory> history;
 
   ReclamationModel({
     required this.id,
     required this.referenceNumber,
-    required this.studentId,
-    required this.moduleId,
-    required this.semestreId,
-    this.noteId,
-    required this.academicYear,
     required this.type,
-    this.noteActuelle,
+    required this.typeDb,
+    required this.status,
+    required this.noteActuelle,
     this.noteReclamee,
     required this.justification,
-    required this.status,
     this.adminResponse,
-    this.meetingScheduledAt,
-    this.meetingLocation,
+    required this.isEscalated,
+    this.escalationReason,
+    required this.academicYear,
     required this.createdAt,
+    required this.updatedAt,
+    this.resolvedAt,
+    this.respondedAt,
+    this.escalatedAt,
+    this.meeting,
+    required this.module,
+    required this.semestre,
+    this.attachments = const [],
+    this.history = const [],
   });
 
-  // مصنع (Factory) لتحويل الـ JSON القادم من لارفيل إلى Model داخل فلاتر
   factory ReclamationModel.fromJson(Map<String, dynamic> json) {
     return ReclamationModel(
-      id: json['id'],
-      referenceNumber: json['reference_number'],
-      studentId: json['student_id'],
-      moduleId: json['module_id'],
-      semestreId: json['semestre_id'],
-      noteId: json['note_id'],
-      academicYear: json['academic_year'],
-      type: ReclamationType.values.byName(json['type']),
-      noteActuelle: json['note_actuelle'] != null ? double.parse(json['note_actuelle'].toString()) : null,
-      noteReclamee: json['note_reclamee'] != null ? double.parse(json['note_reclamee'].toString()) : null,
-      justification: json['justification'],
-      status: ReclamationStatus.values.byName(json['status']),
+      id: json['id']?.toString() ?? '',
+      referenceNumber: json['reference_number'] ?? json['reference'] ?? '',
+      type: json['type'] ?? '',
+      typeDb: json['type_db'] ?? '',
+      status: json['status'] ?? '',
+
+      // CORRIGÉ : Conversion sécurisée au cas où Laravel envoie un String ("13.00") ou un num (13.0)
+      noteActuelle: json['note_actuelle'] != null
+          ? (double.tryParse(json['note_actuelle'].toString()) ?? 0.0)
+          : 0.0,
+
+      // CORRIGÉ : Conversion sécurisée identique pour la note réclamée
+      noteReclamee: json['note_reclamee'] != null
+          ? double.tryParse(json['note_reclamee'].toString())
+          : null,
+
+      justification: json['justification'] ?? '',
       adminResponse: json['admin_response'],
-      meetingScheduledAt: json['meeting_scheduled_at'] != null ? DateTime.parse(json['meeting_scheduled_at']) : null,
-      meetingLocation: json['meeting_location'],
-      createdAt: DateTime.parse(json['created_at']),
+      isEscalated: json['is_escalated'] ?? false,
+      escalationReason: json['escalation_reason'],
+      academicYear: json['academic_year'] ?? '',
+      createdAt: json['created_at'] ?? '',
+      updatedAt: json['updated_at'] ?? '',
+      resolvedAt: json['resolved_at'],
+      respondedAt: json['responded_at'],
+      escalatedAt: json['escalated_at'],
+      meeting: json['meeting'],
+      module: ReclamationModule.fromJson(json['module'] ?? {}),
+      semestre: ReclamationSemestre.fromJson(json['semestre'] ?? {}),
+      attachments: (json['attachments'] as List?)
+          ?.map((e) => ReclamationAttachment.fromJson(e))
+          .toList() ?? [],
+      history: (json['history'] as List?)
+          ?.map((e) => ReclamationHistory.fromJson(e))
+          .toList() ?? [],
     );
   }
+}
 
-  // تحويل الكائن إلى Map لإرساله إلى لارفيل عند إنشاء شكوى جديدة
-  Map<String, dynamic> toJson() {
-    return {
-      'module_id': moduleId,
-      'semestre_id': semestreId,
-      'note_id': noteId,
-      'academic_year': academicYear,
-      'type': type.name,
-      'note_actuelle': noteActuelle,
-      'note_reclamee': noteReclamee,
-      'justification': justification,
-    };
+class ReclamationModule {
+  final String id;
+  final String code;
+  final String name;
+  final String? coefficient;
+  final String? credits;
+
+  ReclamationModule({
+    required this.id,
+    required this.code,
+    required this.name,
+    this.coefficient,
+    this.credits,
+  });
+
+  factory ReclamationModule.fromJson(Map<String, dynamic> json) {
+    return ReclamationModule(
+      id: json['id']?.toString() ?? '',
+      code: json['code'] ?? '',
+      name: json['name'] ?? '',
+      coefficient: json['coefficient']?.toString(),
+      credits: json['credits']?.toString(),
+    );
+  }
+}
+
+class ReclamationSemestre {
+  final String id;
+  final String code;
+  final String label;
+  final bool isOpen;
+  final String? academicYear;
+
+  ReclamationSemestre({
+    required this.id,
+    required this.code,
+    required this.label,
+    required this.isOpen,
+    this.academicYear,
+  });
+
+  factory ReclamationSemestre.fromJson(Map<String, dynamic> json) {
+    return ReclamationSemestre(
+      id: json['id']?.toString() ?? '',
+      code: json['code'] ?? '',
+      label: json['label'] ?? '',
+      isOpen: json['is_open'] ?? false,
+      academicYear: json['academic_year']?.toString(),
+    );
+  }
+}
+
+class ReclamationAttachment {
+  final String id;
+  final String fileName;
+  final String? filePath;
+  final int? fileSize;
+  final String? mimeType;
+  final String? url;
+  final String? createdAt;
+
+  ReclamationAttachment({
+    required this.id,
+    required this.fileName,
+    this.filePath,
+    this.fileSize,
+    this.mimeType,
+    this.url,
+    this.createdAt,
+  });
+
+  factory ReclamationAttachment.fromJson(Map<String, dynamic> json) {
+    return ReclamationAttachment(
+      id: json['id']?.toString() ?? '',
+      fileName: json['file_name'] ?? 'Fichier',
+      filePath: json['file_path'],
+      fileSize: json['file_size'] != null ? int.tryParse(json['file_size'].toString()) : null,
+      mimeType: json['mime_type'],
+      url: json['url'],
+      createdAt: json['created_at']?.toString(),
+    );
+  }
+}
+
+class ReclamationHistory {
+  final String id;
+  final String? oldStatus;
+  final String newStatus;
+  final String? comment;
+  final String createdAt;
+  final String changedByLabel;
+
+  ReclamationHistory({
+    required this.id,
+    this.oldStatus,
+    required this.newStatus,
+    this.comment,
+    required this.createdAt,
+    required this.changedByLabel,
+  });
+
+  factory ReclamationHistory.fromJson(Map<String, dynamic> json) {
+    return ReclamationHistory(
+      id: json['id']?.toString() ?? '',
+      oldStatus: json['old_status'],
+      newStatus: json['new_status'] ?? '',
+      comment: json['comment'],
+      createdAt: json['created_at'] ?? '',
+      changedByLabel: json['changed_by_label'] ?? 'Système',
+    );
   }
 }

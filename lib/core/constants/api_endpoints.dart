@@ -32,8 +32,8 @@ class ApiEndpoints {
   static String showReclamation(int id) => '$reclamations/$id';
   static String updateReclamation(int id) => '$reclamations/$id';
   static String showNote(int id) => '$notes/$id';
-  static String showNotification(int id) => '$notifications/$id';
-  static String readNotification(int id) => '$notifications/$id/read';
-  static String deleteNotification(int id) => '$notifications/$id';
+  static String showNotification(String id) => '$notifications/$id';
+  static String readNotification(String id) => '$notifications/$id/read';
+  static String deleteNotification(String id) => '$notifications/$id';
   static String showDocument(int id) => '$documents/$id';
 }

@@ -1,62 +1,76 @@
-import 'package:dio/dio.dart';
-import 'api_client.dart';
+import 'dart:io';
+import 'package:dio/dio.dart'; // <-- Ce package sera reconnu après le 'flutter pub add'
 import '../models/reclamation_model.dart';
 import '../../core/constants/api_endpoints.dart';
 
 class ReclamationService {
-  final ApiClient _apiClient;
+  final Dio _dio; // Reçu depuis ApiConfig
 
-  ReclamationService(this._apiClient);
+  ReclamationService(this._dio);
 
-  // ══════════════════════════════════════════════════════════════════
-  // جلب كل شكاوى الطالب وتحويلها تلقائياً إلى قائمة كائنات جاهزة للعرض
-  // ══════════════════════════════════════════════════════════════════
-  Future<List<ReclamationModel>?> getMyReclamations() async {
-    try {
-      final response = await _apiClient.get(ApiEndpoints.reclamations);
+  // GET /api/v1/student/reclamations
+  Future<List<ReclamationModel>> getReclamations({String? status, String? type}) async {
+    final queryParameters = <String, dynamic>{};
+    if (status != null && status != 'all') queryParameters['status'] = status;
+    if (type != null) queryParameters['type'] = type;
 
-      // التأكد من أن الرد ليس null وأن محتوى البيانات عبارة عن Map
-      if (response != null && response.data is Map) {
-        final dataMap = response.data as Map<String, dynamic>;
+    final Response response = await _dio.get(
+      ApiEndpoints.reclamations,
+      queryParameters: queryParameters,
+    );
 
-        if (dataMap['success'] == true && dataMap['data'] != null) {
-          if (dataMap['data'] is List) {
-            List<dynamic> dataList = dataMap['data'];
-            return dataList.map((json) => ReclamationModel.fromJson(json)).toList();
-          }
-        }
-      }
-    } on DioException catch (e) {
-      print("خطأ سيرفر لارفيل عند جلب الشكاوى: ${e.response?.data}");
-    } catch (e) {
-      print("خطأ غير متوقع عند جلب الشكاوى: $e");
+    if (response.data != null && response.data['success'] == true) {
+      final List list = response.data['data'] ?? [];
+      return list.map((json) => ReclamationModel.fromJson(json)).toList();
     }
-    return null;
+    throw Exception(response.data?['message'] ?? 'Erreur lors du chargement des réclamations');
   }
 
-  // ══════════════════════════════════════════════════════════════════
-  // إرسال شكوى جديدة بناءً على الحقول المطلوبة في الـ Migration
-  // ══════════════════════════════════════════════════════════════════
-  Future<bool> sendNewReclamation(ReclamationModel reclamation) async {
-    try {
-      final response = await _apiClient.post(
-        ApiEndpoints.reclamations,
-        data: reclamation.toJson(),
-      );
+  // GET /api/v1/student/reclamations/{id}
+  Future<ReclamationModel> getReclamationById(int id) async {
+    final Response response = await _dio.get(ApiEndpoints.showReclamation(id));
 
-      // التحقق الآمن من أن الرد غير فارغ ومن بنية الـ Map المرتجعة
-      if (response != null && response.data is Map) {
-        final dataMap = response.data as Map<String, dynamic>;
-        return dataMap['success'] == true;
-      }
-
-      return false;
-    } on DioException catch (e) {
-      print("فشل إرسال الشكوى: ${e.response?.data}");
-      return false;
-    } catch (e) {
-      print("خطأ غير متوقع عند إرسال الشكوى: $e");
-      return false;
+    if (response.data != null && response.data['success'] == true) {
+      return ReclamationModel.fromJson(response.data['data']);
     }
+    throw Exception(response.data?['message'] ?? 'Détails introuvables');
+  }
+
+  // POST /api/v1/student/reclamations
+  Future<bool> createReclamation({
+    required String semestreId,
+    required String moduleId,
+    required String type,
+    required double noteActuelle,
+    double? noteReclamee,
+    required String justification,
+    File? file,
+  }) async {
+    final formData = FormData.fromMap({
+      'semestre_id': int.parse(semestreId),
+      'module_id': int.parse(moduleId),
+      'type': type,
+      'note_actuelle': noteActuelle,
+      if (noteReclamee != null) 'note_reclamee': noteReclamee,
+      'justification': justification,
+      if (file != null)
+        'document': await MultipartFile.fromFile(
+          file.path,
+          filename: file.path.split('/').last,
+        ),
+    });
+
+    final Response response = await _dio.post(
+      ApiEndpoints.reclamations,
+      data: formData,
+    );
+
+    return response.data != null && response.data['success'] == true;
+  }
+
+  // DELETE /api/v1/student/reclamations/{id}
+  Future<bool> cancelReclamation(int id) async {
+    final Response response = await _dio.delete(ApiEndpoints.updateReclamation(id));
+    return response.data != null && response.data['success'] == true;
   }
 }
