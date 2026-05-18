@@ -37,7 +37,7 @@ class ReclamationService {
   }
 
   // POST /api/v1/student/reclamations
-  Future<bool> createReclamation({
+  Future<int?> createReclamation({
     required String semestreId,
     required String moduleId,
     required String type,
@@ -65,7 +65,13 @@ class ReclamationService {
       data: formData,
     );
 
-    return response.data != null && response.data['success'] == true;
+    if (response.data != null && response.data['success'] == true) {
+      final payload = response.data['data'] ?? response.data;
+      final id = payload['id'] ?? payload['reclamation_id'];
+      if (id != null) return int.tryParse(id.toString());
+      return null;
+    }
+    throw Exception(response.data?['message'] ?? 'Erreur lors de la soumission');
   }
 
   // DELETE /api/v1/student/reclamations/{id}

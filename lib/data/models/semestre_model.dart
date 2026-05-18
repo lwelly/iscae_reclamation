@@ -1,3 +1,10 @@
+class SemestresLoadResult {
+  final List<SemestreModel> semestres;
+  final String niveau;
+
+  const SemestresLoadResult({required this.semestres, required this.niveau});
+}
+
 class SemestreModel {
   final int id;
   final String code;

@@ -28,11 +28,18 @@ class StudentService {
 
   // ── Semestres ──────────────────────────────────────────────
   Future<List<SemestreModel>> getSemestres() async {
+    final result = await getSemestresWithNiveau();
+    return result.semestres;
+  }
+
+  Future<SemestresLoadResult> getSemestresWithNiveau() async {
     try {
       final response = await _dio.get(ApiEndpoints.semestres);
       if (response.statusCode == 200 && response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'];
-        return data.map((json) => SemestreModel.fromJson(json)).toList();
+        final List<dynamic> data = response.data['data'] ?? [];
+        final semestres = data.map((json) => SemestreModel.fromJson(json)).toList();
+        final niveau = response.data['niveau']?.toString() ?? '';
+        return SemestresLoadResult(semestres: semestres, niveau: niveau);
       }
       throw Exception('Failed to load semestres');
     } on DioException catch (e) {

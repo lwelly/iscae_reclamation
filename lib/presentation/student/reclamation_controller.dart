@@ -7,11 +7,13 @@ class ReclamationController extends ChangeNotifier {
   List<ReclamationModel> _reclamations = [];
   ReclamationModel? _selectedReclamation;
   bool _isLoading = false;
+  bool _isLoadingDetail = false;
   String? _errorMessage;
 
   List<ReclamationModel> get reclamations => _reclamations;
   ReclamationModel? get selectedReclamation => _selectedReclamation;
   bool get isLoading => _isLoading;
+  bool get isLoadingDetail => _isLoadingDetail;
   String? get errorMessage => _errorMessage;
 
   Future<void> fetchReclamations({String? status, String? type}) async {
@@ -32,22 +34,30 @@ class ReclamationController extends ChangeNotifier {
     }
   }
 
-  Future<void> fetchDetails(int id) async {
-    _isLoading = true;
+  Future<ReclamationModel?> fetchDetails(int id) async {
+    _isLoadingDetail = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
       _selectedReclamation = await ApiConfig().reclamationService.getReclamationById(id);
+      return _selectedReclamation;
     } catch (e) {
       _errorMessage = _cleanErrorMessage(e);
+      return null;
     } finally {
-      _isLoading = false;
+      _isLoadingDetail = false;
       notifyListeners();
     }
   }
 
-  Future<bool> submitReclamation({
+  void clearSelected() {
+    _selectedReclamation = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  Future<int?> submitReclamation({
     required String semestreId,
     required String moduleId,
     required String type,
@@ -61,7 +71,7 @@ class ReclamationController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final success = await ApiConfig().reclamationService.createReclamation(
+      final newId = await ApiConfig().reclamationService.createReclamation(
         semestreId: semestreId,
         moduleId: moduleId,
         type: type,
@@ -70,14 +80,14 @@ class ReclamationController extends ChangeNotifier {
         justification: justification,
         file: file,
       );
-      if (success) {
+      if (newId != null) {
         await fetchReclamations();
-        return true;
+        return newId;
       }
-      return false;
+      return null;
     } catch (e) {
       _errorMessage = _cleanErrorMessage(e);
-      return false;
+      return null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -88,7 +98,7 @@ class ReclamationController extends ChangeNotifier {
     try {
       final success = await ApiConfig().reclamationService.cancelReclamation(id);
       if (success) {
-        _reclamations.removeWhere((element) => element.id == id);
+        _reclamations.removeWhere((element) => element.id == id.toString());
         notifyListeners();
         return true;
       }
