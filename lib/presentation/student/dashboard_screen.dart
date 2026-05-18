@@ -1,318 +1,734 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/config/api_config.dart';
-import '../../data/models/dashboard_model.dart';
+import '../../data/models/reclamation_model.dart';
+import 'create_reclamation_screen.dart';
 import 'dashboard_controller.dart';
+import 'reclamation_detail_screen.dart';
+import 'reclamation_screen.dart';
+
+/// Couleurs graphiques alignées sur DashboardView.vue
+class _DashColors {
+  static const submitted = Color(0xFF60A5FA);
+  static const inReview = Color(0xFFFBBF24);
+  static const escalated = Color(0xFFFB923C);
+  static const resolved = Color(0xFF34D399);
+  static const rejected = Color(0xFFF87171);
+  static const closed = Color(0xFF6B7280);
+  static const chartBlue = Color(0xFF3B82F6);
+
+  static Color statusColor(String status) => switch (status) {
+        'submitted' => submitted,
+        'in_review' => inReview,
+        'escalated' => escalated,
+        'resolved' => resolved,
+        'rejected' => rejected,
+        'closed' => closed,
+        _ => closed,
+      };
+
+  static String statusLabel(String status) => switch (status) {
+        'submitted' => 'Soumise',
+        'in_review' => 'En cours',
+        'escalated' => 'Escaladée',
+        'resolved' => 'Résolue',
+        'rejected' => 'Rejetée',
+        'closed' => 'Fermée',
+        _ => status,
+      };
+}
 
 class StudentDashboard extends StatefulWidget {
-  const StudentDashboard({super.key});
+  final bool embedded;
+  final VoidCallback? onNewReclamation;
+  final VoidCallback? onViewAllReclamations;
+
+  const StudentDashboard({
+    super.key,
+    this.embedded = false,
+    this.onNewReclamation,
+    this.onViewAllReclamations,
+  });
 
   @override
   State<StudentDashboard> createState() => _StudentDashboardState();
 }
 
 class _StudentDashboardState extends State<StudentDashboard> {
+  _ChartType _chartType = _ChartType.bar;
+
   @override
   void initState() {
     super.initState();
-    // Charger les données via le Provider
-    Future.microtask(() => context.read<DashboardController>().loadAllData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DashboardController>().loadAllData();
+    });
   }
 
-  @override
-  void dispose() {
-    super.dispose();
+  String get _todayLabel {
+    final now = DateTime.now();
+    const jours = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+    const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    return '${jours[now.weekday - 1]} ${now.day} ${mois[now.month - 1]} ${now.year}';
+  }
+
+  ({List<String> labels, List<double> data}) _buildMonthlyData(List<ReclamationModel> items) {
+    final map = <String, int>{};
+    final now = DateTime.now();
+    for (var i = 5; i >= 0; i--) {
+      final d = DateTime(now.year, now.month - i, 1);
+      final key = '${d.year}-${d.month.toString().padLeft(2, '0')}';
+      map[key] = 0;
+    }
+    for (final r in items) {
+      if (r.createdAt.isEmpty) continue;
+      try {
+        final d = DateTime.parse(r.createdAt);
+        final key = '${d.year}-${d.month.toString().padLeft(2, '0')}';
+        if (map.containsKey(key)) map[key] = map[key]! + 1;
+      } catch (_) {}
+    }
+    final sorted = map.keys.toList()..sort();
+    const mois = ['jan', 'fév', 'mar', 'avr', 'mai', 'juin', 'juil', 'août', 'sep', 'oct', 'nov', 'déc'];
+    final labels = sorted.map((k) {
+      final parts = k.split('-');
+      final m = int.parse(parts[1]);
+      final label = mois[m - 1];
+      return label[0].toUpperCase() + label.substring(1);
+    }).toList();
+    return (labels: labels, data: sorted.map((k) => map[k]!.toDouble()).toList());
+  }
+
+  void _openNewReclamation() {
+    if (widget.onNewReclamation != null) {
+      widget.onNewReclamation!();
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateReclamationScreen()));
+    }
+  }
+
+  void _openAllReclamations() {
+    if (widget.onViewAllReclamations != null) {
+      widget.onViewAllReclamations!();
+    } else {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const ReclamationScreen()));
+    }
+  }
+
+  void _openDetail(ReclamationModel r) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: int.parse(r.id))),
+    );
+  }
+
+  String _formatDateShort(String? d) {
+    if (d == null || d.isEmpty) return '—';
+    try {
+      final dt = DateTime.parse(d).toLocal();
+      const mois = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+      return '${dt.day.toString().padLeft(2, '0')} ${mois[dt.month - 1]}';
+    } catch (_) {
+      return '—';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<DashboardController>();
-    return Scaffold(
-      key: const Key('dashboard_scaffold'),
-      appBar: AppBar(
-        key: const Key('dashboard_appbar'),
-        title: const Text('Dashboard Étudiant'),
-        actions: [
-          IconButton(
-            key: const Key('notifications_button'),
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              // TODO: Naviguer vers l'écran des notifications
-            },
-          ),
-          IconButton(
-            key: const Key('logout_button'),
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('auth_token');
-              ApiConfig().clearAuthToken();
-              if (mounted) {
-                Navigator.of(context).pushReplacementNamed('/login');
-              }
-            },
-          ),
-        ],
-      ),
-      body: AnimatedBuilder(
-        animation: controller,
-        builder: (context, child) {
-          if (controller.isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
+    final body = Consumer<DashboardController>(
+      builder: (context, controller, _) {
+        if (controller.hasError && controller.reclamations.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                const SizedBox(height: 12),
+                Text(controller.errorMessage ?? 'Erreur de chargement', textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => controller.loadAllData(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          );
+        }
 
-          if (controller.hasError) {
-            return Center(
-              key: const Key('error_center'),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, size: 60, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Erreur: ${controller.errorMessage}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                    const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      onPressed: () => controller.loadAllData(),
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer'),
-                    ),
-                  ],
+        return RefreshIndicator(
+          onRefresh: () => controller.loadAllData(),
+          child: ListView(
+            padding: const EdgeInsets.all(24),
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildHeader(controller),
+                      const SizedBox(height: 20),
+                      _buildKpis(controller),
+                      const SizedBox(height: 20),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          if (constraints.maxWidth > 900) {
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(flex: 8, child: _buildMainChart(controller)),
+                                const SizedBox(width: 16),
+                                Expanded(flex: 4, child: _buildDoughnutCard(controller)),
+                              ],
+                            );
+                          }
+                          return Column(
+                            children: [
+                              _buildMainChart(controller),
+                              const SizedBox(height: 16),
+                              _buildDoughnutCard(controller),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      _buildRecentCard(controller),
+                    ],
+                  ),
                 ),
               ),
-            );
-          }
-
-          return _buildDashboardContent(controller);
-        },
-      ),
+            ],
+          ),
+        );
+      },
     );
-  }
 
-  Widget _buildDashboardContent(DashboardController controller) {
-    final dashboard = controller.dashboard;
-    if (dashboard == null) {
-      return const Center(
-        child: Text('Aucune donnée disponible'),
-      );
+    if (widget.embedded) {
+      return Scaffold(backgroundColor: const Color(0xFFF8FAFC), body: body);
     }
 
-    return RefreshIndicator(
-      key: const Key('refresh_indicator'),
-      onRefresh: () => controller.loadAllData(),
-      child: ListView(
-        key: const Key('dashboard_list'),
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildStudentInfo(),
-          const SizedBox(height: 16),
-          _buildStatsGrid(dashboard),
-          const SizedBox(height: 16),
-          _buildReclamationsCard(dashboard),
-          const SizedBox(height: 16),
-          _buildNotificationsCard(dashboard),
-        ],
-      ),
+    return Scaffold(
+      appBar: AppBar(title: const Text('Tableau de bord')),
+      body: body,
     );
   }
 
-  Widget _buildStudentInfo() {
-    return const Card(
-      elevation: 2,
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 40,
-              child: Icon(Icons.person, size: 40),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Nom Étudiant',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Matricule: XXXXXX',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid(DashboardModel dashboard) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 12,
-      crossAxisSpacing: 12,
-      childAspectRatio: 1.3, // Améliore le ratio hauteur/largeur des tuiles
+  Widget _buildHeader(DashboardController controller) {
+    final accent = Theme.of(context).colorScheme.primary;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatItem('Réclamations', dashboard.totalReclamations.toString(), Colors.blue),
-        _buildStatItem('En attente', dashboard.pendingReclamations.toString(), Colors.orange),
-        _buildStatItem('Résolues', dashboard.resolvedReclamations.toString(), Colors.green),
-        _buildStatItem('Rejetées', dashboard.rejectedReclamations.toString(), Colors.red),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Bonjour, ${controller.studentFirstName}',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _todayLabel,
+                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+        FilledButton.icon(
+          onPressed: _openNewReclamation,
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('Nouvelle réclamation'),
+          style: FilledButton.styleFrom(
+            backgroundColor: accent,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color) {
-    return Container(
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+  Widget _buildKpis(DashboardController controller) {
+    final loading = controller.isLoading;
+    final kpis = [
+      _KpiDef('Total', loading ? '—' : '${controller.totalCount}', Icons.assignment_outlined, const Color(0xFF60A5FA), const Color(0x263B82F6)),
+      _KpiDef('En attente', loading ? '—' : '${controller.pendingCount}', Icons.schedule_outlined, const Color(0xFFFBBF24), const Color(0x26FBBF24)),
+      _KpiDef('Résolues', loading ? '—' : '${controller.resolvedCount}', Icons.check_circle_outline, const Color(0xFF34D399), const Color(0x2634D399)),
+      _KpiDef('Rejetées', loading ? '—' : '${controller.rejectedCount}', Icons.cancel_outlined, const Color(0xFFF87171), const Color(0x26F87171)),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final crossCount = constraints.maxWidth > 600 ? 4 : 2;
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossCount,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: crossCount == 4 ? 1.8 : 1.6,
+          children: kpis.map((k) => _KpiCard(kpi: k)).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildMainChart(DashboardController controller) {
+    final monthly = _buildMonthlyData(controller.reclamations);
+    final maxY = monthly.data.isEmpty ? 4.0 : (monthly.data.reduce((a, b) => a > b ? a : b) + 1).clamp(4, 999).toDouble();
+
+    return _ThemeCard(
+      title: 'Évolution des réclamations',
+      subtitle: 'Activité sur les 6 derniers mois',
+      trailing: _ChartToggle(
+        chartType: _chartType,
+        onChanged: (t) => setState(() => _chartType = t),
       ),
+      child: SizedBox(
+        height: 320,
+        child: controller.isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+                child: _chartType == _ChartType.bar
+                    ? BarChart(
+                        BarChartData(
+                          maxY: maxY,
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          titlesData: FlTitlesData(
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 28,
+                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                              ),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (v, meta) {
+                                  final i = v.toInt();
+                                  if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          barGroups: List.generate(monthly.data.length, (i) {
+                            return BarChartGroupData(
+                              x: i,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: monthly.data[i],
+                                  color: _DashColors.chartBlue,
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                                  width: 22,
+                                ),
+                              ],
+                            );
+                          }),
+                        ),
+                      )
+                    : LineChart(
+                        LineChartData(
+                          maxY: maxY,
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+                          ),
+                          borderData: FlBorderData(show: false),
+                          titlesData: FlTitlesData(
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            leftTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                reservedSize: 28,
+                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                              ),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (v, meta) {
+                                  final i = v.toInt();
+                                  if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: List.generate(monthly.data.length, (i) => FlSpot(i.toDouble(), monthly.data[i])),
+                              isCurved: true,
+                              color: _DashColors.chartBlue,
+                              barWidth: 2,
+                              dotData: const FlDotData(show: true),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                color: _DashColors.chartBlue.withOpacity(0.12),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+      ),
+    );
+  }
+
+  Widget _buildDoughnutCard(DashboardController controller) {
+    final total = controller.totalCount;
+    final legendDefs = [
+      ('in_review', 'En attente', _DashColors.inReview),
+      ('resolved', 'Résolues', _DashColors.resolved),
+      ('rejected', 'Rejetées', _DashColors.rejected),
+      ('submitted', 'Soumises', _DashColors.submitted),
+      ('escalated', 'Escaladées', _DashColors.escalated),
+    ];
+    final counts = controller.statusCounts;
+    final segments = legendDefs
+        .map((s) {
+          final count = counts[s.$1] ?? 0;
+          return (key: s.$1, label: s.$2, color: s.$3, count: count, pct: total > 0 ? ((count / total) * 100).round() : 0);
+        })
+        .where((s) => s.count > 0)
+        .toList();
+
+    return _ThemeCard(
+      title: 'Répartition',
+      subtitle: 'Par statut',
+      child: controller.isLoading
+          ? const SizedBox(height: 280, child: Center(child: CircularProgressIndicator()))
+          : Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                children: [
+                  SizedBox(
+                    height: 180,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        if (segments.isEmpty)
+                          Center(child: Text('Aucune donnée', style: TextStyle(color: Colors.grey[500])))
+                        else
+                          PieChart(
+                            PieChartData(
+                              sectionsSpace: 2,
+                              centerSpaceRadius: 58,
+                              sections: segments
+                                  .map(
+                                    (s) => PieChartSectionData(
+                                      value: s.count.toDouble(),
+                                      color: s.color,
+                                      radius: 28,
+                                      showTitle: false,
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('$total', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
+                            Text('Total', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ...segments.map((s) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          children: [
+                            Container(width: 10, height: 10, decoration: BoxDecoration(color: s.color, shape: BoxShape.circle)),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(s.label, style: const TextStyle(fontSize: 13))),
+                            Text('${s.count}', style: const TextStyle(fontWeight: FontWeight.w700)),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 38,
+                              child: Text('${s.pct}%', style: TextStyle(fontSize: 12, color: Colors.grey[600]), textAlign: TextAlign.right),
+                            ),
+                          ],
+                        ),
+                      )),
+                ],
+              ),
+            ),
+    );
+  }
+
+  Widget _buildRecentCard(DashboardController controller) {
+    final recent = controller.recentReclamations;
+    return _ThemeCard(
+      title: 'Réclamations récentes',
+      trailing: TextButton.icon(
+        onPressed: _openAllReclamations,
+        icon: const Icon(Icons.arrow_forward, size: 13),
+        label: const Text('Voir tout'),
+        style: TextButton.styleFrom(
+          textStyle: const TextStyle(fontSize: 12),
+          foregroundColor: Theme.of(context).colorScheme.primary,
+        ),
+      ),
+      child: controller.isLoading
+          ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+          : recent.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 36),
+                  child: Column(
+                    children: [
+                      Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[400]),
+                      const SizedBox(height: 10),
+                      Text('Aucune réclamation pour le moment', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                      const SizedBox(height: 12),
+                      FilledButton.tonal(
+                        onPressed: _openNewReclamation,
+                        child: const Text('Créer une réclamation'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: recent.map((r) => _RecentRow(
+                        reclamation: r,
+                        dateLabel: _formatDateShort(r.createdAt),
+                        onTap: () => _openDetail(r),
+                      )).toList(),
+                ),
+    );
+  }
+}
+
+enum _ChartType { bar, line }
+
+class _KpiDef {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  final Color light;
+
+  const _KpiDef(this.label, this.value, this.icon, this.color, this.light);
+}
+
+class _KpiCard extends StatelessWidget {
+  final _KpiDef kpi;
+  const _KpiCard({required this.kpi});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Column(
-        key: Key('stat_item_$label'),
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: kpi.light, borderRadius: BorderRadius.circular(9)),
+            child: Icon(kpi.icon, color: kpi.color, size: 20),
+          ),
+          const SizedBox(height: 10),
+          Text(kpi.value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, height: 1)),
+          const SizedBox(height: 3),
+          Text(kpi.label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+        ],
+      ),
+    );
+  }
+}
+
+class _ThemeCard extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final Widget child;
+  final Widget? trailing;
+
+  const _ThemeCard({
+    required this.title,
+    required this.child,
+    this.subtitle,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      if (subtitle != null) ...[
+                        const SizedBox(height: 3),
+                        Text(subtitle!, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      ],
+                    ],
+                  ),
+                ),
+                if (trailing != null) trailing!,
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: color, fontWeight: FontWeight.w500),
-          ),
+          const Divider(height: 1),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ChartToggle extends StatelessWidget {
+  final _ChartType chartType;
+  final ValueChanged<_ChartType> onChanged;
+
+  const _ChartToggle({required this.chartType, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _toggleBtn('Barres', _ChartType.bar, primary),
+          _toggleBtn('Courbe', _ChartType.line, primary),
         ],
       ),
     );
   }
 
-  Widget _buildReclamationsCard(DashboardModel dashboard) {
-    return Card(
-      key: const Key('reclamations_card'),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Réclamations Récentes',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                TextButton(
-                  onPressed: () {
-                    // TODO: Naviguer vers la liste complète des réclamations
-                  },
-                  child: const Text('Voir tout'),
-                ),
-              ],
-            ),
-            const Divider(),
-            if (dashboard.totalReclamations == 0)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('Aucune réclamation enregistrée'),
-              )
-            else
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: dashboard.totalReclamations > 3 ? 3 : dashboard.totalReclamations,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.blue,
-                      child: const Icon(Icons.description, color: Colors.blue),
-                    ),
-                    title: Text('Réclamation N° ${index + 1}'),
-                    subtitle: const Text('Statut: En cours d\'examen'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      // TODO: Naviguer vers le détail de la réclamation
-                    },
-                  );
-                },
-              ),
-          ],
+  Widget _toggleBtn(String label, _ChartType type, Color primary) {
+    final active = chartType == type;
+    return GestureDetector(
+      onTap: () => onChanged(type),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+        decoration: BoxDecoration(
+          color: active ? primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          boxShadow: active ? [BoxShadow(color: primary.withOpacity(0.25), blurRadius: 4, offset: const Offset(0, 1))] : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: active ? Colors.white : Colors.grey[600],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildNotificationsCard(DashboardModel dashboard) {
-    return Card(
-      key: const Key('notifications_card'),
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Notifications',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+class _RecentRow extends StatelessWidget {
+  final ReclamationModel reclamation;
+  final String dateLabel;
+  final VoidCallback onTap;
+
+  const _RecentRow({required this.reclamation, required this.dateLabel, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _DashColors.statusColor(reclamation.status);
+    final ref = reclamation.referenceNumber.isNotEmpty
+        ? reclamation.referenceNumber
+        : '#${reclamation.id}';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+          ),
+          child: Row(
+            children: [
+              Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(ref, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      reclamation.module.name.isNotEmpty ? reclamation.module.name : reclamation.type,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
-                if (dashboard.unreadNotifications > 0)
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.circular(12),
+                      color: color.withOpacity(0.13),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: color.withOpacity(0.27)),
                     ),
                     child: Text(
-                      '${dashboard.unreadNotifications} non lue(s)',
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      _DashColors.statusLabel(reclamation.status),
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
                     ),
                   ),
-              ],
-            ),
-            const Divider(),
-            if (dashboard.unreadNotifications == 0)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 8.0),
-                child: Text('Aucune notification non lue'),
-              )
-            else
-              ListView.separated(
-                key: const Key('notifications_list_builder'),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: dashboard.unreadNotifications > 3 ? 3 : dashboard.unreadNotifications,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.notification_important, color: Colors.amber),
-                    title: Text('Notification de test ${index + 1}'),
-                    subtitle: Text('Il y a ${index + 1} heure(s)'),
-                    onTap: () {
-                      // TODO: Action clic notification
-                    },
-                  );
-                },
+                  const SizedBox(height: 3),
+                  Text(dateLabel, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                ],
               ),
-          ],
+            ],
+          ),
         ),
       ),
     );
