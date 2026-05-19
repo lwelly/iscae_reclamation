@@ -151,7 +151,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                                 onViewAllReclamations: () => _selectIndex(1),
                               ),
                               const ReclamationScreen(),
-                              const CreateReclamationScreen(),
+                              CreateReclamationScreen(onBackToDashboard: () => _selectIndex(0)),
                               const NotificationScreen(),
                               const ProfileScreen(),
                             ],

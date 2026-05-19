@@ -11,7 +11,10 @@ import 'reclamation_detail_screen.dart';
 import 'reclamation_ui_helpers.dart';
 
 class CreateReclamationScreen extends StatefulWidget {
-  const CreateReclamationScreen({super.key});
+  /// Utilisé quand l'écran est intégré dans [MainLayoutScreen].
+  final VoidCallback? onBackToDashboard;
+
+  const CreateReclamationScreen({super.key, this.onBackToDashboard});
 
   @override
   State<CreateReclamationScreen> createState() => _CreateReclamationScreenState();
@@ -298,6 +301,18 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
     );
   }
 
+  void _handleBackPressed() {
+    if (_step > 1) {
+      setState(() => _step--);
+      return;
+    }
+    if (widget.onBackToDashboard != null) {
+      widget.onBackToDashboard!();
+      return;
+    }
+    Navigator.pushReplacementNamed(context, '/dashboard');
+  }
+
   bool _isNarrow(BuildContext context) => MediaQuery.sizeOf(context).width < 520;
 
   IconData _fileIcon(File file) => Icons.insert_drive_file_outlined;
@@ -309,55 +324,56 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
     final narrow = _isNarrow(context);
     final hPad = narrow ? 16.0 : 24.0;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text('Nouvelle Réclamation'),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            if (_step > 1) {
-              setState(() => _step--);
-            } else {
-              Navigator.pop(context);
-            }
-          },
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBackPressed();
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          title: const Text('Nouvelle Réclamation'),
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _handleBackPressed,
+          ),
         ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(hPad, hPad, hPad, 16),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 860),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(primary, narrow: narrow),
-                      const SizedBox(height: 16),
-                      if (_niveauCode.isNotEmpty) _buildInfoAlert('Vous êtes en $_niveauCode'),
-                      if (!_loadingSemestres && _semestres.isEmpty)
-                        _buildWarningAlert(
-                          'Aucun semestre n\'est actuellement ouvert aux réclamations pour votre niveau $_niveauCode. Contactez l\'administration.',
-                        ),
-                      if (_globalError.isNotEmpty) _buildErrorAlert(_globalError),
-                      const SizedBox(height: 8),
-                      if (_step == 1) _buildStep1(),
-                      if (_step == 2) _buildStep2(),
-                      if (_step == 3) _buildStep3(),
-                    ],
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(hPad, hPad, hPad, 16),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 860),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(primary, narrow: narrow),
+                        const SizedBox(height: 16),
+                        if (_niveauCode.isNotEmpty) _buildInfoAlert('Vous êtes en $_niveauCode'),
+                        if (!_loadingSemestres && _semestres.isEmpty)
+                          _buildWarningAlert(
+                            'Aucun semestre n\'est actuellement ouvert aux réclamations pour votre niveau $_niveauCode. Contactez l\'administration.',
+                          ),
+                        if (_globalError.isNotEmpty) _buildErrorAlert(_globalError),
+                        const SizedBox(height: 8),
+                        if (_step == 1) _buildStep1(),
+                        if (_step == 2) _buildStep2(),
+                        if (_step == 3) _buildStep3(),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          _buildNavBar(primary, narrow: narrow),
-        ],
+            _buildNavBar(primary, narrow: narrow),
+          ],
+        ),
       ),
     );
   }
