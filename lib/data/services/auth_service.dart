@@ -80,11 +80,17 @@ class AuthService {
   // ══════════════════════════════════════════════════════════════════
   // 2. طلب إرسال كود الـ OTP للتسجيل الجديد
   // ══════════════════════════════════════════════════════════════════
-  Future<dynamic> sendRegistrationOtp(String email) async {
+  Future<dynamic> sendRegistrationOtp({
+    required int studentId,
+    required String email,
+  }) async {
     try {
       final response = await _apiClient.post(
         ApiEndpoints.sendOtp,
-        data: {'email': email},
+        data: {
+          'student_id': studentId,
+          'email': email.trim().toLowerCase(),
+        },
       );
       if (response != null && response.data is Map) return response.data;
       return 'فشل إرسال كود التحقق';
@@ -98,13 +104,13 @@ class AuthService {
   // 3. التحقق من صحة كود الـ OTP المدخل للتسجيل
   // ══════════════════════════════════════════════════════════════════
   Future<dynamic> verifyRegistrationOtp({
-    required String email,
+    required int studentId,
     required String otpCode,
   }) async {
     try {
       final response = await _apiClient.post(
         ApiEndpoints.verifyOtp,
-        data: {'email': email, 'otp_code': otpCode},
+        data: {'student_id': studentId, 'otp_code': otpCode},
       );
       if (response != null && response.data is Map) return response.data;
       return 'فشل فحص رمز التأكيد';
@@ -118,9 +124,7 @@ class AuthService {
   // 4. إنشاء وتأكيد الحساب النهائي للطالب
   // ══════════════════════════════════════════════════════════════════
   Future<dynamic> registerStudent({
-    required String matricule,
-    required String email,
-    required String name,
+    required int studentId,
     required String password,
     required String passwordConfirmation,
   }) async {
@@ -128,9 +132,7 @@ class AuthService {
       final response = await _apiClient.post(
         ApiEndpoints.register,
         data: {
-          'matricule': matricule,
-          'email': email,
-          'name': name,
+          'student_id': studentId,
           'password': password,
           'password_confirmation': passwordConfirmation,
         },

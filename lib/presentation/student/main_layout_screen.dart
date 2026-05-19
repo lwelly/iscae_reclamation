@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_config.dart';
@@ -26,6 +27,7 @@ class MainLayoutScreen extends StatefulWidget {
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   static const _drawerWidth = 260.0;
   static const _railWidth = 68.0;
+  static const _prefDarkMode = 'theme_dark_mode';
 
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
@@ -44,8 +46,72 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   void initState() {
     super.initState();
+    _loadThemePreference();
     WidgetsBinding.instance.addPostFrameCallback((_) => _initData());
   }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final dark = prefs.getBool(_prefDarkMode) ?? false;
+    if (mounted) setState(() => _isDark = dark);
+  }
+
+  Future<void> _toggleDarkMode() async {
+    setState(() => _isDark = !_isDark);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefDarkMode, _isDark);
+  }
+
+  ThemeData _buildAppTheme() {
+    if (_isDark) {
+      const primary = Color(0xFF6366F1);
+      return ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: _mainBg,
+        colorScheme: const ColorScheme.dark(
+          primary: primary,
+          onPrimary: Colors.white,
+          surface: Color(0xFF1E1E2E),
+          onSurface: Color(0xFFE2E8F0),
+          outline: Color(0xFF334155),
+        ),
+        cardColor: const Color(0xFF1E1E2E),
+        dividerColor: const Color(0xFF334155),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF1E1E2E),
+          foregroundColor: Color(0xFFE2E8F0),
+          elevation: 0,
+        ),
+      );
+    }
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: _mainBg,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF0F2547),
+        primary: const Color(0xFF0F2547),
+      ),
+      cardColor: Colors.white,
+      dividerColor: const Color(0xFFE2E8F0),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: Color(0xFF0F172A),
+        elevation: 0,
+      ),
+    );
+  }
+
+  SystemUiOverlayStyle get _overlayStyle => _isDark
+      ? SystemUiOverlayStyle.light.copyWith(
+          statusBarColor: _appBarBg,
+          statusBarIconBrightness: Brightness.light,
+        )
+      : SystemUiOverlayStyle.dark.copyWith(
+          statusBarColor: _appBarBg,
+          statusBarIconBrightness: Brightness.dark,
+        );
 
   @override
   void dispose() {
@@ -115,13 +181,15 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
     final showLabels = !_rail || _isMobile;
     final sidebarWidth = (_rail && !_isMobile) ? _railWidth : _drawerWidth;
 
-    return Theme(
-      data: _isDark ? ThemeData.dark(useMaterial3: true) : ThemeData.light(useMaterial3: true),
-      child: Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: _mainBg,
-        drawer: _isMobile ? Drawer(child: _buildDrawerContent(showLabels: true, expanded: true)) : null,
-        body: Row(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _overlayStyle,
+      child: Theme(
+        data: _buildAppTheme(),
+        child: Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: _mainBg,
+          drawer: _isMobile ? Drawer(child: _buildDrawerContent(showLabels: true, expanded: true)) : null,
+          body: Row(
           children: [
             if (!_isMobile)
               AnimatedContainer(
@@ -164,6 +232,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -347,79 +416,91 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
         return Material(
           color: _appBarBg,
-          child: Container(
-            height: 56,
+          child: DecoratedBox(
             decoration: BoxDecoration(
               border: Border(bottom: BorderSide(color: _appBarBorder)),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Row(
-              children: [
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                  icon: Icon(_rail && !_isMobile ? Icons.menu_open : Icons.menu, color: _isDark ? const Color(0xFFA9B1D6) : const Color(0xFF0F2D5E)),
-                  onPressed: _toggleSidebar,
-                ),
-                Expanded(
+            child: SafeArea(
+              bottom: false,
+              child: SizedBox(
+                height: kToolbarHeight,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Row(
                     children: [
-                      if (!_isMobile) ...[
-                        Text('Étudiant', style: TextStyle(fontSize: 13, color: _isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8), fontWeight: FontWeight.w500)),
-                        Icon(Icons.chevron_right, size: 14, color: _isDark ? const Color(0xFF565F89) : const Color(0xFFCBD5E1)),
-                        const SizedBox(width: 4),
-                      ],
-                      Flexible(
-                        child: Text(
-                          _pageTitles[_selectedIndex] ?? 'Espace Étudiant',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: _isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(
+                          _rail && !_isMobile ? Icons.menu_open : Icons.menu,
+                          color: _isDark ? const Color(0xFFA9B1D6) : const Color(0xFF0F2D5E),
                         ),
+                        onPressed: _toggleSidebar,
+                      ),
+                      Expanded(
+                        child: Row(
+                          children: [
+                            if (!_isMobile) ...[
+                              Text(
+                                'Étudiant',
+                                style: TextStyle(fontSize: 13, color: _isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+                              ),
+                              Icon(Icons.chevron_right, size: 14, color: _isDark ? const Color(0xFF565F89) : const Color(0xFFCBD5E1)),
+                              const SizedBox(width: 4),
+                            ],
+                            Flexible(
+                              child: Text(
+                                _pageTitles[_selectedIndex] ?? 'Espace Étudiant',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: _isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A),
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: _isDark ? 'Mode clair' : 'Mode sombre',
+                        onPressed: _toggleDarkMode,
+                        icon: Icon(
+                          _isDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
+                          color: _isDark ? const Color(0xFFFCD34D) : const Color(0xFF475569),
+                          size: 22,
+                        ),
+                      ),
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _selectIndex(3),
+                        icon: Badge(
+                          isLabelVisible: unread > 0,
+                          label: Text(unread > 99 ? '99+' : '$unread'),
+                          child: Icon(
+                            Icons.notifications_outlined,
+                            size: 20,
+                            color: _isDark ? const Color(0xFFD1D5DB) : const Color(0xFF475569),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      _UserMenuButton(
+                        firstName: firstName,
+                        fullName: fullName,
+                        email: email,
+                        photoUrl: photoUrl,
+                        initials: initials,
+                        isDark: _isDark,
+                        isMobile: _isMobile,
+                        onProfile: () => _selectIndex(4),
+                        onLogout: _logout,
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                  tooltip: _isDark ? 'Mode clair' : 'Mode sombre',
-                  onPressed: () => setState(() => _isDark = !_isDark),
-                  icon: Icon(
-                    _isDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
-                    color: _isDark ? const Color(0xFFFCD34D) : const Color(0xFF475569),
-                    size: 22,
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                  onPressed: () => _selectIndex(3),
-                  icon: Badge(
-                    isLabelVisible: unread > 0,
-                    label: Text(unread > 99 ? '99+' : '$unread'),
-                    child: Icon(Icons.notifications_outlined, size: 20, color: _isDark ? const Color(0xFFD1D5DB) : const Color(0xFF475569)),
-                  ),
-                ),
-                _UserMenuButton(
-                  firstName: firstName,
-                  fullName: fullName,
-                  email: email,
-                  photoUrl: photoUrl,
-                  initials: initials,
-                  isDark: _isDark,
-                  isMobile: _isMobile,
-                  onProfile: () => _selectIndex(4),
-                  onLogout: _logout,
-                ),
-              ],
+              ),
             ),
           ),
         );

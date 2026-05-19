@@ -206,7 +206,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     );
 
     if (widget.embedded) {
-      return Scaffold(backgroundColor: const Color(0xFFF8FAFC), body: body);
+      return body;
     }
 
     return Scaffold(
@@ -229,7 +229,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         const SizedBox(height: 4),
         Text(
           _todayLabel,
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 12, color: context.dashTextMuted),
         ),
       ],
     );
@@ -314,7 +314,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           gridData: FlGridData(
                             show: true,
                             drawVerticalLine: false,
-                            getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+                            getDrawingHorizontalLine: (_) => FlLine(color: context.dashGridLine, strokeWidth: 1),
                           ),
                           borderData: FlBorderData(show: false),
                           titlesData: FlTitlesData(
@@ -324,7 +324,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 reservedSize: 28,
-                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
                               ),
                             ),
                             bottomTitles: AxisTitles(
@@ -335,7 +335,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                   if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 6),
-                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
                                   );
                                 },
                               ),
@@ -362,7 +362,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           gridData: FlGridData(
                             show: true,
                             drawVerticalLine: false,
-                            getDrawingHorizontalLine: (_) => FlLine(color: Colors.grey.shade200, strokeWidth: 1),
+                            getDrawingHorizontalLine: (_) => FlLine(color: context.dashGridLine, strokeWidth: 1),
                           ),
                           borderData: FlBorderData(show: false),
                           titlesData: FlTitlesData(
@@ -372,7 +372,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                               sideTitles: SideTitles(
                                 showTitles: true,
                                 reservedSize: 28,
-                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
                               ),
                             ),
                             bottomTitles: AxisTitles(
@@ -383,7 +383,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                                   if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
                                   return Padding(
                                     padding: const EdgeInsets.only(top: 6),
-                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
                                   );
                                 },
                               ),
@@ -442,7 +442,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
                       alignment: Alignment.center,
                       children: [
                         if (segments.isEmpty)
-                          Center(child: Text('Aucune donnée', style: TextStyle(color: Colors.grey[500])))
+                          Center(child: Text('Aucune donnée', style: TextStyle(color: context.dashTextMuted)))
                         else
                           PieChart(
                             PieChartData(
@@ -463,8 +463,8 @@ class _StudentDashboardState extends State<StudentDashboard> {
                         Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text('$total', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700)),
-                            Text('Total', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                            Text('$total', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
+                            Text('Total', style: TextStyle(fontSize: 12, color: context.dashTextMuted)),
                           ],
                         ),
                       ],
@@ -477,12 +477,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
                           children: [
                             Container(width: 10, height: 10, decoration: BoxDecoration(color: s.color, shape: BoxShape.circle)),
                             const SizedBox(width: 8),
-                            Expanded(child: Text(s.label, style: const TextStyle(fontSize: 13))),
+                            Expanded(child: Text(s.label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface))),
                             Text('${s.count}', style: const TextStyle(fontWeight: FontWeight.w700)),
                             const SizedBox(width: 12),
                             SizedBox(
                               width: 38,
-                              child: Text('${s.pct}%', style: TextStyle(fontSize: 12, color: Colors.grey[600]), textAlign: TextAlign.right),
+                              child: Text('${s.pct}%', style: TextStyle(fontSize: 12, color: context.dashTextMuted), textAlign: TextAlign.right),
                             ),
                           ],
                         ),
@@ -537,6 +537,16 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
 enum _ChartType { bar, line }
 
+extension _DashTheme on BuildContext {
+  bool get dashIsDark => Theme.of(this).brightness == Brightness.dark;
+  Color get dashCardBg => dashIsDark ? const Color(0xFF1E1E2E) : Colors.white;
+  Color get dashCardBorder => dashIsDark ? const Color(0xFF334155) : Colors.grey.shade200;
+  Color get dashTextMuted => dashIsDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
+  Color get dashDivider => dashIsDark ? const Color(0xFF334155) : Colors.grey.shade100;
+  Color get dashToggleBg => dashIsDark ? const Color(0xFF2D3748) : Colors.grey.shade100;
+  Color get dashGridLine => dashIsDark ? const Color(0xFF334155) : Colors.grey.shade200;
+}
+
 class _KpiDef {
   final String label;
   final String value;
@@ -560,9 +570,9 @@ class _KpiCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.dashCardBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.dashCardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,12 +589,15 @@ class _KpiCard extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(kpi.value, style: TextStyle(fontSize: valueSize, fontWeight: FontWeight.w700, height: 1)),
+            child: Text(
+              kpi.value,
+              style: TextStyle(fontSize: valueSize, fontWeight: FontWeight.w700, height: 1, color: Theme.of(context).colorScheme.onSurface),
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             kpi.label,
-            style: TextStyle(fontSize: compact ? 11 : 12, color: Colors.grey[600]),
+            style: TextStyle(fontSize: compact ? 11 : 12, color: context.dashTextMuted),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -611,9 +624,9 @@ class _ThemeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.dashCardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.dashCardBorder),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -628,10 +641,10 @@ class _ThemeCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                      Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
                       if (subtitle != null) ...[
                         const SizedBox(height: 3),
-                        Text(subtitle!, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                        Text(subtitle!, style: TextStyle(fontSize: 12, color: context.dashTextMuted)),
                       ],
                     ],
                   ),
@@ -640,7 +653,7 @@ class _ThemeCard extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: context.dashCardBorder),
           child,
         ],
       ),
@@ -660,21 +673,24 @@ class _ChartToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: context.dashToggleBg,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _toggleBtn('Barres', _ChartType.bar, primary),
-          _toggleBtn('Courbe', _ChartType.line, primary),
+          _toggleBtn(context, 'Barres', _ChartType.bar, primary),
+          _toggleBtn(context, 'Courbe', _ChartType.line, primary),
         ],
       ),
     );
   }
 
-  Widget _toggleBtn(String label, _ChartType type, Color primary) {
+  Widget _toggleBtn(BuildContext context, String label, _ChartType type, Color primary) {
     final active = chartType == type;
+    final inactiveColor = Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF94A3B8)
+        : Colors.grey[600]!;
     return GestureDetector(
       onTap: () => onChanged(type),
       child: Container(
@@ -689,7 +705,7 @@ class _ChartToggle extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: active ? Colors.white : Colors.grey[600],
+            color: active ? Colors.white : inactiveColor,
           ),
         ),
       ),
@@ -718,7 +734,7 @@ class _RecentRow extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
+            border: Border(bottom: BorderSide(color: context.dashDivider)),
           ),
           child: Row(
             children: [
@@ -728,11 +744,11 @@ class _RecentRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(ref, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    Text(ref, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
                     const SizedBox(height: 2),
                     Text(
                       reclamation.module.name.isNotEmpty ? reclamation.module.name : reclamation.type,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 11, color: context.dashTextMuted),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
@@ -754,7 +770,7 @@ class _RecentRow extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(dateLabel, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                  Text(dateLabel, style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
                 ],
               ),
             ],

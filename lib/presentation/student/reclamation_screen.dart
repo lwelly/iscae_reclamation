@@ -111,7 +111,7 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<ReclamationController>(
         builder: (context, controller, _) {
           final list = controller.reclamations;

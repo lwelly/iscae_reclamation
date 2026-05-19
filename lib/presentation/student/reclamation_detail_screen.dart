@@ -53,6 +53,21 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     });
   }
 
+  void _handleBackPressed() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+      return;
+    }
+    Navigator.pushReplacementNamed(context, '/dashboard');
+  }
+
+  static String _formatNote(num value) {
+    final d = value.toDouble();
+    if (d == d.roundToDouble()) return d.toInt().toString();
+    final s = d.toStringAsFixed(2);
+    return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+  }
+
   Future<void> _cancelReclamation(ReclamationModel rec) async {
     setState(() => _cancelling = true);
     final controller = context.read<ReclamationController>();
@@ -78,9 +93,14 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: Consumer<ReclamationController>(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _handleBackPressed();
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Consumer<ReclamationController>(
         builder: (context, controller, _) {
           final rec = controller.selectedReclamation;
           final loading = controller.isLoadingDetail;
@@ -91,7 +111,7 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
               if (loading)
                 const Center(child: CircularProgressIndicator())
               else if (error != null && rec == null)
-                _ErrorState(message: error, onBack: () => Navigator.pop(context))
+                _ErrorState(message: error, onBack: _handleBackPressed)
               else if (rec != null)
                 _buildContent(context, rec, primary, controller),
               if (_confirmCancelDialog && rec != null)
@@ -105,6 +125,7 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
             ],
           );
         },
+      ),
       ),
     );
   }
@@ -229,22 +250,23 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
         final wide = constraints.maxWidth >= 700;
         final pad = wide ? 24.0 : 16.0;
 
+        final topInset = MediaQuery.paddingOf(context).top;
+
         return CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: EdgeInsets.fromLTRB(pad, pad, pad, 0),
+                padding: EdgeInsets.fromLTRB(pad, topInset + 8, pad, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         IconButton(
                           visualDensity: VisualDensity.compact,
                           icon: const Icon(Icons.arrow_back),
-                          onPressed: () => Navigator.pop(context),
+                          onPressed: _handleBackPressed,
                         ),
                         Expanded(
                           child: Column(
@@ -383,10 +405,10 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
           children: [
             _InfoRow('Référence', rec.referenceNumber, mono: true),
             _InfoRow('Type', ReclamationUi.typeLabel(rec.type), chip: true, chipColor: ReclamationUi.typeColor(rec.type)),
-            _InfoRow('Note actuelle', '${rec.noteActuelle} / 20', note: true),
+            _InfoRow('Note actuelle', '${_formatNote(rec.noteActuelle)} / 20', note: true),
             _InfoRow(
               'Note réclamée',
-              rec.noteReclamee != null ? '${rec.noteReclamee} / 20' : '—',
+              rec.noteReclamee != null ? '${_formatNote(rec.noteReclamee!)} / 20' : '—',
               noteClaim: true,
             ),
             _InfoRow('Date de soumission', ReclamationUi.formatDateTime(rec.createdAt)),
@@ -653,11 +675,15 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final borderColor = isDark ? const Color(0xFF334155) : Colors.grey.shade200;
+
     return Card(
       elevation: 0,
+      color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: borderColor),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -668,7 +694,14 @@ class _SectionCard extends StatelessWidget {
               children: [
                 Icon(icon, color: iconColor ?? Theme.of(context).colorScheme.primary, size: 20),
                 const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
