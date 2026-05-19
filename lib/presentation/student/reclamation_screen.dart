@@ -133,14 +133,15 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               children: [
                 // En-tête
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  alignment: WrapAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '${list.length} réclamation${list.length > 1 ? 's' : ''} au total',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                      ),
+                    Text(
+                      '${list.length} réclamation${list.length > 1 ? 's' : ''} au total',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                     FilledButton.icon(
                       onPressed: _openNew,
@@ -159,54 +160,48 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    ..._filters.map((f) => _FilterChip(
-                          label: f.label,
-                          icon: f.icon,
-                          count: counts[f.key] ?? 0,
-                          active: _activeFilter == f.key,
-                          onTap: () => _setFilter(f.key),
-                        )),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 260,
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Rechercher...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          isDense: true,
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          suffixIcon: _search.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _search = '';
-                                      _page = 1;
-                                    });
-                                  },
-                                )
-                              : null,
-                        ),
-                        onChanged: (v) => setState(() {
-                          _search = v;
-                          _page = 1;
-                        }),
-                      ),
+                  children: _filters.map((f) => _FilterChip(
+                        label: f.label,
+                        icon: f.icon,
+                        count: counts[f.key] ?? 0,
+                        active: _activeFilter == f.key,
+                        onTap: () => _setFilter(f.key),
+                      )).toList(),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Rechercher...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    isDense: true,
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
                     ),
-                  ],
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    suffixIcon: _search.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _search = '';
+                                _page = 1;
+                              });
+                            },
+                          )
+                        : null,
+                  ),
+                  onChanged: (v) => setState(() {
+                    _search = v;
+                    _page = 1;
+                  }),
                 ),
                 const SizedBox(height: 20),
 
@@ -272,13 +267,28 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                     ),
                   )
                 else
-                  _ReclamationTable(
-                    rows: paginated,
-                    totalFiltered: filtered.length,
-                    page: safePage,
-                    totalPages: totalPages,
-                    onPageChanged: (p) => setState(() => _page = p),
-                    onRowTap: _goDetail,
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final useCards = constraints.maxWidth < 720;
+                      if (useCards) {
+                        return _ReclamationCardList(
+                          rows: paginated,
+                          totalFiltered: filtered.length,
+                          page: safePage,
+                          totalPages: totalPages,
+                          onPageChanged: (p) => setState(() => _page = p),
+                          onRowTap: _goDetail,
+                        );
+                      }
+                      return _ReclamationTable(
+                        rows: paginated,
+                        totalFiltered: filtered.length,
+                        page: safePage,
+                        totalPages: totalPages,
+                        onPageChanged: (p) => setState(() => _page = p),
+                        onRowTap: _goDetail,
+                      );
+                    },
                   ),
               ],
             ),
@@ -428,34 +438,12 @@ class _ReclamationTable extends StatelessWidget {
           const Divider(height: 1),
           // Lignes
           ...rows.map((r) => _TableRow(reclamation: r, onTap: () => onRowTap(r))),
-          // Pied
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            color: Colors.grey.shade50,
-            child: Row(
-              children: [
-                Text(
-                  '${rows.length} sur $totalFiltered réclamation${totalFiltered > 1 ? 's' : ''}',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                ),
-                const Spacer(),
-                if (totalPages > 1)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chevron_left),
-                        onPressed: page > 1 ? () => onPageChanged(page - 1) : null,
-                      ),
-                      Text('$page / $totalPages', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
-                      IconButton(
-                        icon: const Icon(Icons.chevron_right),
-                        onPressed: page < totalPages ? () => onPageChanged(page + 1) : null,
-                      ),
-                    ],
-                  ),
-              ],
-            ),
+          _TableFooter(
+            rowsCount: rows.length,
+            totalFiltered: totalFiltered,
+            page: page,
+            totalPages: totalPages,
+            onPageChanged: onPageChanged,
           ),
         ],
       ),
@@ -471,11 +459,229 @@ class _HeadCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
       style: TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w700,
         color: Colors.grey[600],
         letterSpacing: 0.6,
+      ),
+    );
+  }
+}
+
+/// Liste en cartes pour mobile (évite le tableau illisible).
+class _ReclamationCardList extends StatelessWidget {
+  final List<ReclamationModel> rows;
+  final int totalFiltered;
+  final int page;
+  final int totalPages;
+  final ValueChanged<int> onPageChanged;
+  final ValueChanged<ReclamationModel> onRowTap;
+
+  const _ReclamationCardList({
+    required this.rows,
+    required this.totalFiltered,
+    required this.page,
+    required this.totalPages,
+    required this.onPageChanged,
+    required this.onRowTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        ...rows.map((r) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _ReclamationCard(reclamation: r, onTap: () => onRowTap(r)),
+            )),
+        _TableFooter(
+          rowsCount: rows.length,
+          totalFiltered: totalFiltered,
+          page: page,
+          totalPages: totalPages,
+          onPageChanged: onPageChanged,
+        ),
+      ],
+    );
+  }
+}
+
+class _ReclamationCard extends StatelessWidget {
+  final ReclamationModel reclamation;
+  final VoidCallback onTap;
+
+  const _ReclamationCard({required this.reclamation, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final ref = reclamation.referenceNumber.isNotEmpty
+        ? reclamation.referenceNumber
+        : '#${reclamation.id}';
+    final statusColor = ReclamationUi.statusColor(reclamation.status);
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      ref,
+                      style: TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: primary,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ReclamationUi.statusBg(reclamation.status),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          ReclamationUi.statusLabel(reclamation.status),
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right, size: 20, color: Colors.grey[500]),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                reclamation.module.name.isNotEmpty ? reclamation.module.name : '—',
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ReclamationUi.typeBg(reclamation.type),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      ReclamationUi.typeLabel(reclamation.type),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: ReclamationUi.typeColor(reclamation.type),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule, size: 13, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${ReclamationUi.formatDateShort(reclamation.createdAt)} · ${ReclamationUi.formatTime(reclamation.createdAt)}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TableFooter extends StatelessWidget {
+  final int rowsCount;
+  final int totalFiltered;
+  final int page;
+  final int totalPages;
+  final ValueChanged<int> onPageChanged;
+
+  const _TableFooter({
+    required this.rowsCount,
+    required this.totalFiltered,
+    required this.page,
+    required this.totalPages,
+    required this.onPageChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '$rowsCount sur $totalFiltered réclamation${totalFiltered > 1 ? 's' : ''}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (totalPages > 1)
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: page > 1 ? () => onPageChanged(page - 1) : null,
+                ),
+                Text('$page / $totalPages', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: page < totalPages ? () => onPageChanged(page + 1) : null,
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }
@@ -537,18 +743,23 @@ class _TableRow extends StatelessWidget {
               ),
               Expanded(
                 flex: 2,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: ReclamationUi.typeBg(reclamation.type),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    ReclamationUi.typeLabel(reclamation.type),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: ReclamationUi.typeColor(reclamation.type),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: ReclamationUi.typeBg(reclamation.type),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      ReclamationUi.typeLabel(reclamation.type),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: ReclamationUi.typeColor(reclamation.type),
+                      ),
                     ),
                   ),
                 ),

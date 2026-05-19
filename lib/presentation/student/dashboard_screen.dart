@@ -159,7 +159,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
         return RefreshIndicator(
           onRefresh: () => controller.loadAllData(),
           child: ListView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(widget.embedded ? 12 : 24),
             physics: const AlwaysScrollableScrollPhysics(),
             children: [
               Center(
@@ -217,34 +217,49 @@ class _StudentDashboardState extends State<StudentDashboard> {
 
   Widget _buildHeader(DashboardController controller) {
     final accent = Theme.of(context).colorScheme.primary;
+    final narrow = MediaQuery.sizeOf(context).width < 480;
+
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Bonjour, ${controller.studentFirstName}',
+          style: TextStyle(fontSize: narrow ? 18 : 20, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          _todayLabel,
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+      ],
+    );
+
+    final newBtn = FilledButton.icon(
+      onPressed: _openNewReclamation,
+      icon: const Icon(Icons.add, size: 18),
+      label: Text(narrow ? 'Nouvelle' : 'Nouvelle réclamation'),
+      style: FilledButton.styleFrom(
+        backgroundColor: accent,
+        padding: EdgeInsets.symmetric(horizontal: narrow ? 10 : 14, vertical: 10),
+      ),
+    );
+
+    if (narrow) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          titleBlock,
+          const SizedBox(height: 12),
+          newBtn,
+        ],
+      );
+    }
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Bonjour, ${controller.studentFirstName}',
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _todayLabel,
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
-              ),
-            ],
-          ),
-        ),
-        FilledButton.icon(
-          onPressed: _openNewReclamation,
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Nouvelle réclamation'),
-          style: FilledButton.styleFrom(
-            backgroundColor: accent,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          ),
-        ),
+        Expanded(child: titleBlock),
+        newBtn,
       ],
     );
   }
@@ -261,14 +276,15 @@ class _StudentDashboardState extends State<StudentDashboard> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossCount = constraints.maxWidth > 600 ? 4 : 2;
+        final aspectRatio = crossCount == 4 ? 1.8 : (constraints.maxWidth < 360 ? 1.15 : 1.35);
         return GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: crossCount,
           mainAxisSpacing: 12,
           crossAxisSpacing: 12,
-          childAspectRatio: crossCount == 4 ? 1.8 : 1.6,
-          children: kpis.map((k) => _KpiCard(kpi: k)).toList(),
+          childAspectRatio: aspectRatio,
+          children: kpis.map((k) => _KpiCard(kpi: k, compact: crossCount == 2)).toList(),
         );
       },
     );
@@ -533,12 +549,16 @@ class _KpiDef {
 
 class _KpiCard extends StatelessWidget {
   final _KpiDef kpi;
-  const _KpiCard({required this.kpi});
+  final bool compact;
+  const _KpiCard({required this.kpi, this.compact = false});
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = compact ? 30.0 : 36.0;
+    final valueSize = compact ? 22.0 : 26.0;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(compact ? 12 : 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
@@ -547,17 +567,27 @@ class _KpiCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(color: kpi.light, borderRadius: BorderRadius.circular(9)),
-            child: Icon(kpi.icon, color: kpi.color, size: 20),
+            child: Icon(kpi.icon, color: kpi.color, size: compact ? 18 : 20),
           ),
-          const SizedBox(height: 10),
-          Text(kpi.value, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, height: 1)),
-          const SizedBox(height: 3),
-          Text(kpi.label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+          SizedBox(height: compact ? 6 : 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(kpi.value, style: TextStyle(fontSize: valueSize, fontWeight: FontWeight.w700, height: 1)),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            kpi.label,
+            style: TextStyle(fontSize: compact ? 11 : 12, color: Colors.grey[600]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

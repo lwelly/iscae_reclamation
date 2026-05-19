@@ -1,41 +1,70 @@
 import 'package:flutter/material.dart';
-import '../../../data/models/profile_model.dart';
 import '../../../core/config/api_config.dart';
+import '../../../data/models/profile_model.dart';
+import '../../../data/models/reclamation_model.dart';
+
+class ProfileRecStats {
+  final int total;
+  final int pending;
+  final int resolved;
+
+  const ProfileRecStats({
+    this.total = 0,
+    this.pending = 0,
+    this.resolved = 0,
+  });
+}
 
 class ProfileController extends ChangeNotifier {
   ProfileModel? _profile;
+  ProfileRecStats _recStats = const ProfileRecStats();
   bool _isLoading = false;
   bool _isUpdating = false;
+  bool _uploadingPhoto = false;
   bool _hasError = false;
   String? _errorMessage;
 
-  // Getters
   ProfileModel? get profile => _profile;
+  ProfileRecStats get recStats => _recStats;
   bool get isLoading => _isLoading;
   bool get isUpdating => _isUpdating;
+  bool get uploadingPhoto => _uploadingPhoto;
   bool get hasError => _hasError;
   String? get errorMessage => _errorMessage;
 
-  // Charger le profil
   Future<void> loadProfile() async {
     _setLoading(true);
     _hasError = false;
     _errorMessage = null;
 
     try {
-      _profile = await ApiConfig().studentService.getProfile();
+      final results = await Future.wait([
+        ApiConfig().studentService.getProfile(),
+        ApiConfig().reclamationService.getReclamations().catchError((_) => <ReclamationModel>[]),
+      ]);
+      _profile = results[0] as ProfileModel;
+      final recs = results[1] as List<ReclamationModel>;
+      _recStats = ProfileRecStats(
+        total: recs.length,
+        pending: recs
+            .where((r) => ['submitted', 'received', 'in_review', 'escalated'].contains(r.status))
+            .length,
+        resolved: recs.where((r) => r.status == 'resolved').length,
+      );
       _setLoading(false);
     } catch (e) {
       _setError(e.toString());
     }
   }
 
-  // Mettre à jour le profil
   Future<bool> updateProfile({
     String? prenom,
     String? nom,
     String? email,
     String? phone,
+    String? dateNaissance,
+    String? lieuNaissance,
+    String? nationalite,
     String? adresse,
   }) async {
     _setUpdating(true);
@@ -44,14 +73,16 @@ class ProfileController extends ChangeNotifier {
 
     try {
       final data = <String, dynamic>{};
-      if (prenom != null) data['prenom'] = prenom;
-      if (nom != null) data['nom'] = nom;
-      if (email != null) data['email'] = email;
-      if (phone != null) data['phone'] = phone;
-      if (adresse != null) data['adresse'] = adresse;
+      if (prenom != null && prenom.isNotEmpty) data['prenom'] = prenom;
+      if (nom != null && nom.isNotEmpty) data['nom'] = nom;
+      if (email != null && email.isNotEmpty) data['email'] = email;
+      data['phone'] = phone?.isNotEmpty == true ? phone : null;
+      data['date_naissance'] = dateNaissance?.isNotEmpty == true ? dateNaissance : null;
+      data['lieu_naissance'] = lieuNaissance?.isNotEmpty == true ? lieuNaissance : null;
+      data['nationalite'] = nationalite?.isNotEmpty == true ? nationalite : null;
+      data['adresse'] = adresse?.isNotEmpty == true ? adresse : null;
 
       await ApiConfig().studentService.updateProfile(data);
-      // Recharger le profil après la mise à jour
       await loadProfile();
       _setUpdating(false);
       return true;
@@ -61,25 +92,25 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  // Mettre à jour la photo de profil
   Future<bool> updatePhoto(String photoPath) async {
-    _setUpdating(true);
+    _uploadingPhoto = true;
     _hasError = false;
     _errorMessage = null;
+    notifyListeners();
 
     try {
       await ApiConfig().studentService.updateProfilePhoto(photoPath);
-      // Recharger le profil après la mise à jour
       await loadProfile();
-      _setUpdating(false);
+      _uploadingPhoto = false;
+      notifyListeners();
       return true;
     } catch (e) {
+      _uploadingPhoto = false;
       _setError(e.toString());
       return false;
     }
   }
 
-  // Changer le mot de passe
   Future<bool> updatePassword({
     required String currentPassword,
     required String password,
@@ -116,6 +147,7 @@ class ProfileController extends ChangeNotifier {
   void _setError(String message) {
     _isLoading = false;
     _isUpdating = false;
+    _uploadingPhoto = false;
     _hasError = true;
     _errorMessage = message;
     notifyListeners();

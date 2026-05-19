@@ -21,12 +21,12 @@ dependencies:
   dio: ^5.9.2
 
   # تستخدم لاستخراج معرف الجهاز (Device Fingerprint) لحماية الحسابات عند الدخول من أجهزة جديدة
-  device_info_plus: ^13.1.0
+  device_info_plus: ^11.3.0
 
   # تخزين محلي للتوكن والإعدادات
   shared_preferences: ^2.2.2
   provider: ^6.1.5+1
-  file_picker: ^3.0.4
+  file_picker: ^8.3.7
   fl_chart: ^1.2.0
 
 dev_dependencies:

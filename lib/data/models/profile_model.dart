@@ -68,8 +68,8 @@ class ProfileModel {
       studentId: studentData['id'],
       matricule: studentData['matricule'],
       nni: studentData['nni'],
-      nom: studentData['nom'],
-      prenom: studentData['prenom'],
+      nom: studentData['nom'] ?? studentData['last_name'],
+      prenom: studentData['prenom'] ?? studentData['first_name'],
       studentEmail: studentData['email'],
       phone: studentData['phone'],
       dateNaissance: studentData['date_naissance'],
@@ -80,8 +80,16 @@ class ProfileModel {
       status: studentData['status'],
       photoPath: studentData['photo_path'],
       photoUrl: studentData['photo_url'],
-      filiere: filiereData != null ? Filiere.fromJson(filiereData) : null,
-      niveau: niveauData != null ? Niveau.fromJson(niveauData) : null,
+      filiere: filiereData != null
+          ? Filiere.fromJson(filiereData)
+          : (studentData['filiere_name'] != null
+              ? Filiere(name: studentData['filiere_name']?.toString())
+              : null),
+      niveau: niveauData != null
+          ? Niveau.fromJson(niveauData)
+          : (studentData['niveau_label'] != null
+              ? Niveau(label: studentData['niveau_label']?.toString())
+              : null),
     );
   }
 

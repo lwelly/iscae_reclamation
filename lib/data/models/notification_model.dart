@@ -26,18 +26,44 @@ class NotificationModel {
   });
 
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] != null ? Map<String, dynamic>.from(json['data']) : null;
+    final readAt = json['read_at']?.toString();
+    final isRead = readAt != null && readAt.isNotEmpty ||
+        json['is_read'] == true ||
+        json['is_read'] == 1 ||
+        json['is_read'] == '1';
+
     return NotificationModel(
       id: json['id']?.toString() ?? '',
       type: json['type']?.toString(),
-      title: json['title'] ?? 'Notification',
-      body: json['body'] ?? json['message'] ?? '',
-      isRead: json['is_read'] == true || json['is_read'] == 1 || json['is_read'] == '1',
-      readAt: json['read_at']?.toString(),
+      title: json['title']?.toString() ?? data?['title']?.toString() ?? 'Notification',
+      body: json['message']?.toString() ?? json['body']?.toString() ?? data?['message']?.toString() ?? '',
+      isRead: isRead,
+      readAt: readAt,
       channel: json['channel']?.toString(),
-      data: json['data'] != null ? Map<String, dynamic>.from(json['data']) : null,
-      reclamationId: json['reclamation_id']?.toString(),
+      data: data,
+      reclamationId: json['reclamation_id']?.toString() ?? data?['reclamation_id']?.toString(),
       sentAt: json['sent_at']?.toString(),
       createdAt: json['created_at']?.toString(),
+    );
+  }
+
+  NotificationModel copyWith({
+    bool? isRead,
+    String? readAt,
+  }) {
+    return NotificationModel(
+      id: id,
+      type: type,
+      title: title,
+      body: body,
+      isRead: isRead ?? this.isRead,
+      readAt: readAt ?? this.readAt,
+      channel: channel,
+      data: data,
+      reclamationId: reclamationId,
+      sentAt: sentAt,
+      createdAt: createdAt,
     );
   }
 

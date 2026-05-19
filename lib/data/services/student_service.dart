@@ -207,12 +207,27 @@ class StudentService {
         queryParameters: semestreId != null ? {'semestre_id': semestreId} : null,
       );
       if (response.statusCode == 200 && response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'];
-        return data.map((json) => ModuleModel.fromJson(json)).toList();
+        final raw = response.data['data'];
+        final List<dynamic> data;
+        if (raw is List) {
+          data = raw;
+        } else if (raw is Map && raw['modules'] is List) {
+          data = raw['modules'] as List;
+        } else {
+          data = [];
+        }
+        return data
+            .whereType<Map>()
+            .map((json) => ModuleModel.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
       }
-      throw Exception('Failed to load modules');
+      final message = response.data['message']?.toString();
+      throw Exception(message ?? 'Failed to load modules');
     } on DioException catch (e) {
-      throw Exception('Error loading modules: ${e.message}');
+      final message = e.response?.data is Map
+          ? (e.response!.data as Map)['message']?.toString()
+          : null;
+      throw Exception(message ?? e.message ?? 'Error loading modules');
     }
   }
 
