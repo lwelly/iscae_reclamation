@@ -127,6 +127,16 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
     }
   }
 
+  bool _isValidNoteValue(String val, {required bool required}) {
+    if (val.trim().isEmpty) return !required;
+    final n = double.tryParse(val.trim().replaceAll(',', '.'));
+    return n != null && n >= 0 && n <= 20;
+  }
+
+  String _formatNoteDisplay(String val) {
+    return val.trim().replaceAll(',', '.');
+  }
+
   bool get _canNext {
     if (_step == 1) {
       final noteOk = _isValidNoteValue(_noteActuelleController.text, required: true);
@@ -232,7 +242,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
     setState(() => _errors
       ..clear()
       ..addAll(e));
-    if (e.isEmpty) setState(() => _step++);
+    if (e.isEmpty && _step < 3) setState(() => _step++);
   }
 
   Future<void> _submit() async {
@@ -262,7 +272,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
       _notify('Réclamation soumise avec succès ! Redirection…');
       await Future.delayed(const Duration(milliseconds: 1200));
       if (!mounted) return;
-      Navigator.push(
+      Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: newId)),
       );
@@ -290,6 +300,9 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
 
   bool _isNarrow(BuildContext context) => MediaQuery.sizeOf(context).width < 520;
 
+  IconData _fileIcon(File file) => Icons.insert_drive_file_outlined;
+  Color _fileIconColor(File file) => Colors.blue;
+
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
@@ -298,6 +311,22 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        title: const Text('Nouvelle Réclamation'),
+        elevation: 0,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (_step > 1) {
+              setState(() => _step--);
+            } else {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      ),
       body: Column(
         children: [
           Expanded(
@@ -338,14 +367,8 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Réclamation',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
           'Étape $_step sur 3 — ${_stepTitles[_step - 1]}',
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600], fontWeight: FontWeight.w500),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -354,13 +377,8 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(value: _step / 3, minHeight: 4, color: primary, backgroundColor: Colors.grey[200]),
         ),
-        const SizedBox(height: 4),
-        if (narrow)
-          Text(
-            _stepTitles[_step - 1],
-            style: TextStyle(fontSize: 12, color: primary, fontWeight: FontWeight.bold),
-          )
-        else
+        const SizedBox(height: 8),
+        if (!narrow)
           Row(
             children: List.generate(3, (i) {
               return Expanded(
@@ -385,6 +403,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
   Widget _buildInfoAlert(String message) {
     return Card(
       color: Colors.blue.shade50,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -402,6 +421,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
   Widget _buildWarningAlert(String message) {
     return Card(
       color: Colors.orange.shade50,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -419,6 +439,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
   Widget _buildErrorAlert(String message) {
     return Card(
       color: Colors.red.shade50,
+      elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -437,8 +458,12 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
   Widget _buildStepCard({required String title, required String subtitle, required Widget child}) {
     final narrow = _isNarrow(context);
     return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: EdgeInsets.all(narrow ? 16 : 24),
@@ -461,6 +486,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
       title: 'Informations de la réclamation',
       subtitle: 'Sélectionnez le semestre, le type et le module concerné',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DropdownButtonFormField<String>(
             isExpanded: true,
@@ -468,12 +494,12 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
             decoration: InputDecoration(
               labelText: 'Semestre *',
               prefixIcon: const Icon(Icons.calendar_month),
-              border: const OutlineInputBorder(),
+              border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
               errorText: _errors['semestre_id'],
             ),
             hint: _loadingSemestres
                 ? const Text('Chargement...', overflow: TextOverflow.ellipsis)
-                : const Text('Aucun semestre disponible', overflow: TextOverflow.ellipsis),
+                : const Text('Sélectionnez un semestre', overflow: TextOverflow.ellipsis),
             items: _semestres.map((s) {
               return DropdownMenuItem(
                 value: s.id.toString(),
@@ -483,64 +509,60 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
             onChanged: _loadingSemestres ? null : _onSemestreChanged,
           ),
           const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text('Type de réclamation *', style: const TextStyle(fontWeight: FontWeight.w500)),
-          ),
+          const Text('Type de réclamation *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
           if (_errors['type'] != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(_errors['type']!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
             ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           if (_semestreId == null)
             _buildHintBox('Sélectionnez d\'abord un semestre', Icons.info_outline)
           else if (_availableTypes.isEmpty)
             _buildHintBox('Aucun type disponible pour ce semestre', Icons.error_outline, isError: true)
           else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final w = constraints.maxWidth;
-                final crossCount = w > 500 ? 3 : (w > 340 ? 2 : 1);
-                final tileHeight = crossCount == 1 ? 96.0 : (crossCount == 2 ? 136.0 : 128.0);
-                return GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: crossCount,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    mainAxisExtent: tileHeight,
-                  ),
-                  itemCount: _availableTypes.length,
-                  itemBuilder: (context, index) {
-                    final t = _availableTypes[index];
-                    final selected = _type == t.value;
+          // هنا تم التغيير واستخدام الـ Wrap المرن المتجاوب بدلاً من الـ GridView ذو الارتفاع الثابت الصارم لمنع الـ Overflow تماماً
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: _availableTypes.map((t) {
+                final selected = _type == t.value;
+                return LayoutBuilder(
+                  builder: (context, boxConstraints) {
+                    // جعل مساحة الزر مرنة بحسب عرض الشاشة المتوفر
+                    final parentWidth = MediaQuery.sizeOf(context).width - (_isNarrow(context) ? 64 : 96);
+                    final targetWidth = parentWidth > 500 ? (parentWidth - 24) / 3 : (parentWidth - 12) / 2;
+
                     return GestureDetector(
                       onTap: () => _selectType(t.value),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
+                        width: targetWidth < 140 ? double.infinity : targetWidth,
                         decoration: BoxDecoration(
                           color: selected ? t.bgColor : Colors.white,
-                          border: Border.all(color: selected ? t.bgColor : Colors.grey.shade300, width: 2),
+                          border: Border.all(color: selected ? t.bgColor : Colors.grey.shade300, width: 1.5),
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: selected
-                              ? [BoxShadow(color: t.bgColor.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))]
+                              ? [BoxShadow(color: t.bgColor.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 3))]
                               : null,
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
+                          mainAxisSize: MainAxisSize.min, // يتكيف الطول مع المحتوى لمنع الـ Overflow بالأسفل
                           children: [
-                            Icon(t.icon, color: selected ? Colors.white : t.color, size: 26),
-                            const SizedBox(height: 6),
+                            Icon(t.icon, color: selected ? Colors.white : t.color, size: 28),
+                            const SizedBox(height: 8),
                             Text(
                               t.label,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: selected ? Colors.white : null),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: selected ? Colors.white : Colors.black87,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -548,7 +570,10 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: TextStyle(fontSize: 11, color: selected ? Colors.white70 : Colors.grey[600]),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: selected ? Colors.white70 : Colors.grey[500],
+                              ),
                             ),
                           ],
                         ),
@@ -556,26 +581,26 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
                     );
                   },
                 );
-              },
+              }).toList(),
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           DropdownButtonFormField<String>(
             isExpanded: true,
             value: _moduleId,
             decoration: InputDecoration(
               labelText: 'Module concerné *',
               prefixIcon: const Icon(Icons.menu_book_outlined),
-              border: const OutlineInputBorder(),
+              border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
               errorText: _errors['module_id'],
             ),
             hint: Text(
               _loadingModules
                   ? 'Chargement...'
                   : (_semestreId == null
-                      ? 'Sélectionnez un semestre'
-                      : _modules.isEmpty
-                          ? 'Aucun module disponible'
-                          : 'Choisir un module'),
+                  ? 'Sélectionnez un semestre d\'abord'
+                  : _modules.isEmpty
+                  ? 'Aucun module disponible'
+                  : 'Choisir un module'),
               overflow: TextOverflow.ellipsis,
             ),
             items: _modules.map((m) {
@@ -590,37 +615,37 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
             onChanged: _semestreId == null
                 ? null
                 : (v) => setState(() {
-                      _moduleId = v;
-                      _errors.remove('module_id');
-                    }),
+              _moduleId = v;
+              _errors.remove('module_id');
+            }),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _noteActuelleController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: const [_NoteDecimalTextInputFormatter()],
+            inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*'))],
             decoration: InputDecoration(
               labelText: 'Note actuelle *',
               prefixIcon: const Icon(Icons.numbers),
               suffixText: '/ 20',
               hintText: 'Entre 0 et 20 (ex: 12.5)',
-              border: const OutlineInputBorder(),
+              border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
               errorText: _errors['note_actuelle'],
             ),
             onChanged: (_) => setState(() => _errors.remove('note_actuelle')),
           ),
           if (_type == 'cc') ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             TextFormField(
               controller: _noteReclameeController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: const [_NoteDecimalTextInputFormatter()],
+              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*'))],
               decoration: InputDecoration(
                 labelText: 'Note réclamée',
                 prefixIcon: const Icon(Icons.add_circle_outline),
                 suffixText: '/ 20',
                 hintText: 'Note que vous estimez mériter (optionnel)',
-                border: const OutlineInputBorder(),
+                border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 errorText: _errors['note_reclamee'],
               ),
               onChanged: (_) => setState(() => _errors.remove('note_reclamee')),
@@ -636,6 +661,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
       title: 'Justification',
       subtitle: 'Expliquez clairement le motif de votre réclamation.',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextFormField(
             controller: _justificationController,
@@ -645,13 +671,13 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
               labelText: 'Justification *',
               prefixIcon: const Icon(Icons.text_snippet_outlined),
               hintText: 'Minimum 20 caractères',
-              border: const OutlineInputBorder(),
+              border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
               errorText: _errors['justification'],
             ),
             onChanged: (_) => setState(() => _errors.remove('justification')),
           ),
           const SizedBox(height: 20),
-          Text('Pièce jointe (optionnel)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.grey[700])),
+          Text('Pièce jointe (optionnel)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[700])),
           const SizedBox(height: 8),
           if (_docFile == null)
             InkWell(
@@ -673,8 +699,6 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
                       'Cliquez pour ajouter un document',
                       style: TextStyle(fontWeight: FontWeight.w500),
                       textAlign: TextAlign.center,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       'PDF, JPG ou PNG — max 5 Mo',
@@ -738,11 +762,11 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
       (widget: _recapItem('Justification', _justificationController.text, multiline: true), fullWidth: true),
       if (_docFile != null)
         (
-          widget: _recapItem(
-            'Pièce jointe',
-            '${_docFile!.path.split(Platform.pathSeparator).last} (${ReclamationUi.formatFileSize(_docFile!.lengthSync())})',
-          ),
-          fullWidth: true,
+        widget: _recapItem(
+          'Pièce jointe',
+          '${_docFile!.path.split(Platform.pathSeparator).last} (${ReclamationUi.formatFileSize(_docFile!.lengthSync())})',
+        ),
+        fullWidth: true,
         ),
     ];
 
@@ -777,7 +801,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
               );
             },
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           CheckboxListTile(
             value: _confirmed,
             onChanged: (v) => setState(() => _confirmed = v ?? false),
@@ -794,13 +818,13 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
   }
 
   Widget _recapItem(
-    String label,
-    String value, {
-    bool chip = false,
-    Color? chipColor,
-    bool bold = false,
-    bool multiline = false,
-  }) {
+      String label,
+      String value, {
+        bool chip = false,
+        Color? chipColor,
+        bool bold = false,
+        bool multiline = false,
+      }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
@@ -857,77 +881,96 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
         children: [
           Icon(icon, size: 16, color: isError ? Colors.red : Colors.grey[600]),
           const SizedBox(width: 8),
-          Expanded(child: Text(text, style: TextStyle(color: isError ? Colors.red : Colors.grey[600], fontSize: 14))),
+          Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: isError ? Colors.red.shade900 : Colors.grey[700]))),
         ],
       ),
     );
   }
 
   Widget _buildNavBar(Color primary, {required bool narrow}) {
-    final prevBtn = OutlinedButton.icon(
-      onPressed: _submitting ? null : () => setState(() => _step--),
-      icon: const Icon(Icons.arrow_back),
-      label: const Text('Précédent'),
-    );
-    final nextBtn = FilledButton.icon(
-      onPressed: _canNext ? _goNext : null,
-      icon: const Icon(Icons.arrow_forward),
-      label: const Text('Suivant'),
-    );
-    final submitBtn = FilledButton.icon(
-      onPressed: _confirmed && !_submitting ? _submit : null,
-      style: FilledButton.styleFrom(backgroundColor: Colors.green),
-      icon: _submitting
-          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-          : const Icon(Icons.check_circle),
-      label: Text(_submitting ? 'Soumission...' : 'Soumettre'),
-    );
-
     return Container(
-      padding: EdgeInsets.all(narrow ? 12 : 16),
+      padding: EdgeInsets.symmetric(horizontal: narrow ? 16 : 24, vertical: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))],
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 860),
-          child: narrow
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_step > 1) prevBtn,
-                    if (_step > 1 && (_step < 3 || _step == 3)) const SizedBox(height: 8),
-                    if (_step < 3) nextBtn else submitBtn,
-                  ],
-                )
-              : Row(
-                  children: [
-                    if (_step > 1) prevBtn,
-                    const Spacer(),
-                    if (_step < 3) nextBtn else submitBtn,
-                  ],
-                ),
-        ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          if (_step > 1)
+            OutlinedButton(
+              onPressed: _submitting ? null : () => setState(() => _step--),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Précédent'),
+            )
+          else
+            const SizedBox.shrink(),
+          const Spacer(),
+          if (_step < 3)
+            FilledButton(
+              onPressed: _canNext ? _goNext : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: primary,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Suivant'),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward, size: 16),
+                ],
+              ),
+            )
+          else
+            FilledButton(
+              onPressed: (_confirmed && !_submitting) ? _submit : null,
+              style: FilledButton.styleFrom(
+                backgroundColor: primary,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: _submitting
+                  ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+              )
+                  : const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('Soumettre'),
+                  SizedBox(width: 6),
+                  Icon(Icons.send, size: 16),
+                ],
+              ),
+            ),
+        ],
       ),
     );
-  }
-
-  IconData _fileIcon(File file) {
-    final name = file.path.toLowerCase();
-    if (name.endsWith('.pdf')) return Icons.picture_as_pdf;
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png')) return Icons.image_outlined;
-    return Icons.insert_drive_file_outlined;
-  }
-
-  Color _fileIconColor(File file) {
-    final name = file.path.toLowerCase();
-    if (name.endsWith('.pdf')) return Colors.red;
-    if (name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png')) return Colors.blue;
-    return Colors.grey;
   }
 }
 
+// مُنسق إدخال مخصص تم تضمينه بشكل صحيح ليعمل مع الأرقام العشرية
+class _NoteDecimalTextInputFormatter extends TextInputFormatter {
+  const _NoteDecimalTextInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    final text = newValue.text;
+    if (text.isEmpty) return newValue;
+    if (RegExp(r'^\d*[\.,]?\d*$').hasMatch(text)) {
+      return newValue;
+    }
+    return oldValue;
+  }
+}
+
+// نموذج تعريف لنوع الشكوى داخلي
 class _ReclamationTypeDef {
   final String value;
   final String label;
@@ -944,85 +987,4 @@ class _ReclamationTypeDef {
     required this.color,
     required this.bgColor,
   });
-}
-
-/// Valide une note sur /20 (0–20, max 2 décimales).
-bool _isValidNoteValue(String text, {required bool required}) {
-  final v = text.trim().replaceAll(',', '.');
-  if (v.isEmpty) return !required;
-  if (v.endsWith('.')) return false;
-  final n = double.tryParse(v);
-  return n != null && n >= 0 && n <= 20;
-}
-
-String _formatNoteDisplay(String text) {
-  final v = text.trim().replaceAll(',', '.');
-  if (v.isEmpty) return '—';
-  final n = double.tryParse(v);
-  if (n == null) return text;
-  return _formatNoteNumber(n);
-}
-
-String _formatNoteNumber(double n) {
-  final rounded = (n * 100).round() / 100;
-  var s = rounded.toStringAsFixed(2);
-  if (s.contains('.')) {
-    s = s.replaceAll(RegExp(r'0+$'), '');
-    s = s.replaceAll(RegExp(r'\.$'), '');
-  }
-  return s;
-}
-
-String _sanitizeNoteInput(String val) {
-  var s = val.replaceAll(',', '.');
-  if (s.isEmpty) return s;
-
-  final buf = StringBuffer();
-  var dot = false;
-  for (final c in s.split('')) {
-    if (c == '.' && !dot) {
-      dot = true;
-      buf.write('.');
-    } else if (RegExp(r'[0-9]').hasMatch(c)) {
-      buf.write(c);
-    }
-  }
-  s = buf.toString();
-  if (s.isEmpty) return s;
-  if (s == '.') return '0.';
-
-  if (s.contains('.')) {
-    final parts = s.split('.');
-    if (parts.length == 2 && parts[1].length > 2) {
-      s = '${parts[0]}.${parts[1].substring(0, 2)}';
-    }
-  }
-
-  if (s.endsWith('.')) {
-    final head = s.substring(0, s.length - 1);
-    if (head.isEmpty) return '0.';
-    final n = double.tryParse(head);
-    if (n != null && n > 20) return '20.';
-    return s;
-  }
-
-  final n = double.tryParse(s);
-  if (n == null) return s;
-  if (n > 20) return _formatNoteNumber(20);
-  if (n < 0) return '0';
-  return _formatNoteNumber(n);
-}
-
-class _NoteDecimalTextInputFormatter extends TextInputFormatter {
-  const _NoteDecimalTextInputFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final sanitized = _sanitizeNoteInput(newValue.text);
-    if (sanitized == newValue.text) return newValue;
-    return TextEditingValue(
-      text: sanitized,
-      selection: TextSelection.collapsed(offset: sanitized.length),
-    );
-  }
 }
