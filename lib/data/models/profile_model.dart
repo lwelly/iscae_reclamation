@@ -54,9 +54,12 @@ class ProfileModel {
   });
 
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
-    final studentData = json['student'] as Map<String, dynamic>? ?? {};
-    final filiereData = studentData['filiere'] as Map<String, dynamic>?;
-    final niveauData = studentData['niveau'] as Map<String, dynamic>?;
+    final rawStudent = json['student'];
+    final studentData = rawStudent is Map<String, dynamic> ? rawStudent : <String, dynamic>{};
+    final rawFiliere = studentData['filiere'];
+    final rawNiveau = studentData['niveau'];
+    final filiereData = rawFiliere is Map<String, dynamic> ? rawFiliere : null;
+    final niveauData = rawNiveau is Map<String, dynamic> ? rawNiveau : null;
 
     return ProfileModel(
       id: json['id'] ?? 0,

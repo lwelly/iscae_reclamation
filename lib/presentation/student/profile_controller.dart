@@ -53,7 +53,7 @@ class ProfileController extends ChangeNotifier {
       );
       _setLoading(false);
     } catch (e) {
-      _setError(e.toString());
+      _setError(_formatError(e));
     }
   }
 
@@ -87,7 +87,7 @@ class ProfileController extends ChangeNotifier {
       _setUpdating(false);
       return true;
     } catch (e) {
-      _setError(e.toString());
+      _setError(_formatError(e));
       return false;
     }
   }
@@ -106,7 +106,7 @@ class ProfileController extends ChangeNotifier {
       return true;
     } catch (e) {
       _uploadingPhoto = false;
-      _setError(e.toString());
+      _setError(_formatError(e));
       return false;
     }
   }
@@ -129,7 +129,7 @@ class ProfileController extends ChangeNotifier {
       _setUpdating(false);
       return true;
     } catch (e) {
-      _setError(e.toString());
+      _setError(_formatError(e));
       return false;
     }
   }
@@ -157,5 +157,11 @@ class ProfileController extends ChangeNotifier {
     _hasError = false;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  String _formatError(Object e) {
+    final msg = e.toString();
+    const prefix = 'Exception: ';
+    return msg.startsWith(prefix) ? msg.substring(prefix.length) : msg;
   }
 }

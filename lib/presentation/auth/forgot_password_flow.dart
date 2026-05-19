@@ -77,7 +77,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           Expanded(
             flex: wide ? 7 : 1,
             child: Container(
-              color: AuthColors.forgotBg,
+              color: Theme.of(context).scaffoldBackgroundColor,
               child: SafeArea(
                 child: Center(
                   child: SingleChildScrollView(
@@ -86,11 +86,14 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                       constraints: const BoxConstraints(maxWidth: 490),
                       padding: EdgeInsets.symmetric(horizontal: wide ? 40 : 20, vertical: wide ? 44 : 28),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 4)),
-                        ],
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                        boxShadow: Theme.of(context).brightness == Brightness.dark
+                            ? null
+                            : [
+                                BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 4)),
+                              ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -147,7 +150,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           child: LinearProgressIndicator(
             value: _stepPercent / 100,
             minHeight: 6,
-            backgroundColor: const Color(0xFFF1F5F9),
+            backgroundColor: Theme.of(context).colorScheme.outlineVariant,
             color: _stepColor,
           ),
         ),
@@ -356,9 +359,9 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAFC),
+            color: Theme.of(context).colorScheme.outlineVariant,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFF1F5F9)),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

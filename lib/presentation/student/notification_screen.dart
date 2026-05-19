@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/app_palette.dart';
 import '../../data/models/notification_model.dart';
 import 'notification_controller.dart';
 import 'notification_ui_helpers.dart';
@@ -142,31 +143,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
       alignment: WrapAlignment.spaceBetween,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        const Text('Notifications', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(
+          'Notifications',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: context.appOnSurface),
+        ),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
             if (controller.unreadCount > 0)
-              FilledButton.tonalIcon(
+              OutlinedButton.icon(
                 onPressed: controller.markingAll ? null : () => controller.markAllAsRead(),
                 icon: controller.markingAll
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Icon(Icons.done_all, size: 18),
-                label: const Text('Tout marquer lu'),
-                style: FilledButton.styleFrom(
+                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: primary))
+                    : Icon(Icons.done_all, size: 18, color: primary),
+                label: Text('Tout marquer lu', style: TextStyle(color: primary)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: primary.withValues(alpha: 0.5)),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   visualDensity: VisualDensity.compact,
                 ),
               ),
-            FilledButton.tonalIcon(
+            OutlinedButton.icon(
               onPressed: controller.notifications.isEmpty || controller.clearingAll
                   ? null
                   : () => _showClearAllDialog(controller),
-              icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-              label: const Text('Tout effacer'),
-              style: FilledButton.styleFrom(
-                foregroundColor: Colors.red,
+              icon: const Icon(Icons.delete_sweep_outlined, size: 18, color: Colors.red),
+              label: const Text('Tout effacer', style: TextStyle(color: Colors.red)),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: Colors.red.withValues(alpha: 0.45)),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 visualDensity: VisualDensity.compact,
               ),
@@ -180,7 +185,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget _buildFilters(NotificationController controller, Color primary) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: context.appBorder)),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Wrap(
@@ -191,6 +196,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
             final count = controller.tabCount(tab.$1);
             return FilterChip(
               selected: selected,
+              backgroundColor: context.appSurfaceLow,
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -210,7 +216,8 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ),
               onSelected: (_) => _onTabChanged(tab.$1),
               selectedColor: primary,
-              labelStyle: TextStyle(color: selected ? Colors.white : Colors.grey[700], fontWeight: FontWeight.w600),
+              side: BorderSide(color: selected ? primary : context.appBorder),
+              labelStyle: TextStyle(color: selected ? Colors.white : context.appOnSurface, fontWeight: FontWeight.w600),
               showCheckmark: false,
             );
           }).toList(),
@@ -242,16 +249,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
         : 'Vous n\'avez pas encore reçu de notifications.';
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: context.appBorder)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
         child: Column(
           children: [
-            Icon(Icons.notifications_off_outlined, size: 56, color: Colors.grey[400]),
+            Icon(Icons.notifications_off_outlined, size: 56, color: context.appMuted),
             const SizedBox(height: 16),
-            const Text('Aucune notification', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Aucune notification', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.appOnSurface)),
             const SizedBox(height: 8),
-            Text(message, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600])),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(color: context.appMuted)),
           ],
         ),
       ),
@@ -267,7 +274,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1,
-          color: Colors.grey[600],
+          color: context.appMuted,
         ),
       ),
     );
@@ -278,8 +285,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final typeColor = NotificationUi.color(type);
     final unread = !notif.isRead;
 
+    final border = context.appBorder;
     return Material(
-      color: unread ? primary.withValues(alpha: 0.05) : Colors.white,
+      color: unread ? primary.withValues(alpha: 0.05) : context.appCard,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -288,10 +296,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border(
-              left: BorderSide(color: unread ? primary : Colors.grey.shade200, width: unread ? 4 : 1),
-              top: BorderSide(color: Colors.grey.shade200),
-              right: BorderSide(color: Colors.grey.shade200),
-              bottom: BorderSide(color: Colors.grey.shade200),
+              left: BorderSide(color: unread ? primary : border, width: unread ? 4 : 1),
+              top: BorderSide(color: border),
+              right: BorderSide(color: border),
+              bottom: BorderSide(color: border),
             ),
           ),
           child: Padding(
@@ -319,12 +327,12 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           Expanded(
                             child: Text(
                               notif.title,
-                              maxLines: 1,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
-                                color: unread ? Colors.black87 : Colors.grey[800],
+                                color: context.appOnSurface,
                               ),
                             ),
                           ),
@@ -335,16 +343,19 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               margin: const EdgeInsets.only(left: 8, top: 6),
                               decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
                             ),
-                          const SizedBox(width: 8),
-                          Chip(
-                            label: Text(NotificationUi.typeLabel(type), style: const TextStyle(fontSize: 10)),
-                            backgroundColor: typeColor.withValues(alpha: 0.12),
-                            labelStyle: TextStyle(color: typeColor, fontWeight: FontWeight.w600),
-                            visualDensity: VisualDensity.compact,
-                            padding: EdgeInsets.zero,
-                            side: BorderSide.none,
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 6),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Chip(
+                          label: Text(NotificationUi.typeLabel(type), style: const TextStyle(fontSize: 10)),
+                          backgroundColor: typeColor.withValues(alpha: context.isDarkMode ? 0.2 : 0.12),
+                          labelStyle: TextStyle(color: typeColor, fontWeight: FontWeight.w600),
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          side: BorderSide.none,
+                        ),
                       ),
                       if (notif.body.isNotEmpty) ...[
                         const SizedBox(height: 6),
@@ -352,17 +363,17 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           notif.body,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.4),
+                          style: TextStyle(fontSize: 13, color: context.appMuted, height: 1.4),
                         ),
                       ],
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          Icon(Icons.schedule, size: 12, color: Colors.grey[500]),
+                          Icon(Icons.schedule, size: 12, color: context.appMuted),
                           const SizedBox(width: 4),
                           Text(
                             NotificationUi.fmtTime(notif.createdAt),
-                            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                            style: TextStyle(fontSize: 11, color: context.appMuted),
                           ),
                           const Spacer(),
                           if (unread)
@@ -437,7 +448,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 child: Text(
                   '$pageNum',
                   style: TextStyle(
-                    color: selected ? Colors.white : Colors.grey[700],
+                    color: selected ? Colors.white : context.appOnSurface,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
@@ -469,7 +480,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text('Cette action est irréversible.', style: TextStyle(color: Colors.grey[600])),
+            Text('Cette action est irréversible.', style: TextStyle(color: context.appMuted)),
           ],
         ),
         actions: [

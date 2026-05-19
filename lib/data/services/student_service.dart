@@ -141,25 +141,44 @@ class StudentService {
   Future<ProfileModel> getProfile() async {
     try {
       final response = await _dio.get(ApiEndpoints.profile);
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        return ProfileModel.fromJson(response.data['data']);
+      final body = response.data;
+      if (response.statusCode == 200 && body is Map && body['success'] == true) {
+        final parsed = _parseProfilePayload(body['data']);
+        if (parsed != null) return parsed;
       }
-      throw Exception('Failed to load profile');
+      throw Exception(_apiErrorMessage(body, 'Impossible de charger le profil'));
     } on DioException catch (e) {
-      throw Exception('Error loading profile: ${e.message}');
+      throw Exception(_apiErrorMessage(e.response?.data, e.message ?? 'Erreur réseau'));
     }
+  }
+
+  ProfileModel? _parseProfilePayload(dynamic payload) {
+    if (payload is Map<String, dynamic>) {
+      return ProfileModel.fromJson(payload);
+    }
+    return null;
+  }
+
+  String _apiErrorMessage(dynamic body, String fallback) {
+    if (body is Map && body['message'] != null) {
+      return body['message'].toString();
+    }
+    return fallback;
   }
 
   // ... (Le reste du fichier concernant les modules et documents reste identique)
   Future<ProfileModel> updateProfile(Map<String, dynamic> data) async {
     try {
       final response = await _dio.put(ApiEndpoints.profile, data: data);
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        return ProfileModel.fromJson(response.data['data']);
+      final body = response.data;
+      if (response.statusCode == 200 && body is Map && body['success'] == true) {
+        final parsed = _parseProfilePayload(body['data']);
+        if (parsed != null) return parsed;
+        return getProfile();
       }
-      throw Exception('Failed to update profile');
+      throw Exception(_apiErrorMessage(body, 'Échec de la mise à jour du profil'));
     } on DioException catch (e) {
-      throw Exception('Error updating profile: ${e.message}');
+      throw Exception(_apiErrorMessage(e.response?.data, e.message ?? 'Erreur réseau'));
     }
   }
 
@@ -169,12 +188,15 @@ class StudentService {
         'photo': await MultipartFile.fromFile(photoPath),
       });
       final response = await _dio.post(ApiEndpoints.profilePhoto, data: formData);
-      if (response.statusCode == 200 && response.data['success'] == true) {
-        return ProfileModel.fromJson(response.data['data']);
+      final body = response.data;
+      if (response.statusCode == 200 && body is Map && body['success'] == true) {
+        final parsed = _parseProfilePayload(body['data']);
+        if (parsed != null) return parsed;
+        return getProfile();
       }
-      throw Exception('Failed to update profile photo');
+      throw Exception(_apiErrorMessage(body, 'Échec de la mise à jour de la photo'));
     } on DioException catch (e) {
-      throw Exception('Error updating profile photo: ${e.message}');
+      throw Exception(_apiErrorMessage(e.response?.data, e.message ?? 'Erreur réseau'));
     }
   }
 

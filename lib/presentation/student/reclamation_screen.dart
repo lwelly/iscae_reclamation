@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_palette.dart';
 import '../../data/models/reclamation_model.dart';
 import 'create_reclamation_screen.dart';
 import 'reclamation_controller.dart';
@@ -176,7 +177,7 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                     prefixIcon: const Icon(Icons.search, size: 20),
                     isDense: true,
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: context.appInputFill,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -324,8 +325,11 @@ class _FilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final inactiveBg = context.appCard;
+    final inactiveBorder = context.appBorder;
+    final inactiveText = context.appMuted;
     return Material(
-      color: active ? primary : Colors.white,
+      color: active ? primary : inactiveBg,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: onTap,
@@ -334,19 +338,19 @@ class _FilterChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: active ? primary : Colors.grey.shade300),
+            border: Border.all(color: active ? primary : inactiveBorder),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: active ? Colors.white : Colors.grey[600]),
+              Icon(icon, size: 14, color: active ? Colors.white : inactiveText),
               const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
-                  color: active ? Colors.white : Colors.grey[700],
+                  color: active ? Colors.white : context.appOnSurface,
                 ),
               ),
               const SizedBox(width: 6),
@@ -361,7 +365,7 @@ class _FilterChip extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: active ? Colors.white : Colors.grey[800],
+                    color: active ? Colors.white : context.appOnSurface,
                   ),
                 ),
               ),
@@ -383,9 +387,9 @@ class _StateBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.appBorder),
       ),
       child: Center(child: child),
     );
@@ -413,9 +417,9 @@ class _ReclamationTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.appBorder),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -423,7 +427,7 @@ class _ReclamationTable extends StatelessWidget {
           // En-tête
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            color: Colors.grey.shade50,
+            color: context.appSurfaceLow,
             child: const Row(
               children: [
                 Expanded(flex: 2, child: _HeadCell('Référence')),
@@ -524,7 +528,7 @@ class _ReclamationCard extends StatelessWidget {
     final statusColor = ReclamationUi.statusColor(reclamation.status);
 
     return Material(
-      color: Colors.white,
+      color: context.appCard,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
@@ -533,7 +537,7 @@ class _ReclamationCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: context.appBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -653,16 +657,16 @@ class _TableFooter extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.appBorder),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               '$rowsCount sur $totalFiltered réclamation${totalFiltered > 1 ? 's' : ''}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(fontSize: 12, color: context.appMuted),
               overflow: TextOverflow.ellipsis,
             ),
           ),

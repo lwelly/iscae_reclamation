@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/reclamation_model.dart';
@@ -675,15 +676,12 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final borderColor = isDark ? const Color(0xFF334155) : Colors.grey.shade200;
-
     return Card(
       elevation: 0,
-      color: isDark ? const Color(0xFF1E1E2E) : Colors.white,
+      color: context.appCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: borderColor),
+        side: BorderSide(color: context.appBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),

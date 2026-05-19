@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/config/api_config.dart';
+import '../../core/theme/app_palette.dart';
 import '../../data/models/module_model.dart';
 import '../../data/models/semestre_model.dart';
 import 'reclamation_controller.dart';
@@ -331,12 +332,10 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
         _handleBackPressed();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           title: const Text('Nouvelle Réclamation'),
           elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: _handleBackPressed,
@@ -475,10 +474,10 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
     final narrow = _isNarrow(context);
     return Card(
       elevation: 0,
-      color: Colors.white,
+      color: context.appCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: context.appBorder),
       ),
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
@@ -486,12 +485,79 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.appOnSurface)),
             const SizedBox(height: 4),
-            Text(subtitle, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+            Text(subtitle, style: TextStyle(fontSize: 14, color: context.appMuted)),
             const SizedBox(height: 20),
             child,
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeCard(_ReclamationTypeDef t) {
+    final selected = _type == t.value;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _selectType(t.value),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            color: selected
+                ? t.color.withValues(alpha: context.isDarkMode ? 0.16 : 0.06)
+                : context.appCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? t.color : context.appBorder,
+              width: selected ? 2 : 1,
+            ),
+            boxShadow: context.isDarkMode
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: selected ? 0.07 : 0.04),
+                      blurRadius: selected ? 10 : 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: t.color.withValues(alpha: context.isDarkMode ? 0.22 : 0.1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(t.icon, color: t.color, size: 30),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                t.label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: context.appOnSurface,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                t.desc,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: context.appMuted, height: 1.35),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -525,77 +591,26 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
             onChanged: _loadingSemestres ? null : _onSemestreChanged,
           ),
           const SizedBox(height: 20),
-          const Text('Type de réclamation *', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          Text(
+            'Type de réclamation *',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: context.appOnSurface),
+          ),
           if (_errors['type'] != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(_errors['type']!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
             ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           if (_semestreId == null)
             _buildHintBox('Sélectionnez d\'abord un semestre', Icons.info_outline)
           else if (_availableTypes.isEmpty)
             _buildHintBox('Aucun type disponible pour ce semestre', Icons.error_outline, isError: true)
           else
-          // هنا تم التغيير واستخدام الـ Wrap المرن المتجاوب بدلاً من الـ GridView ذو الارتفاع الثابت الصارم لمنع الـ Overflow تماماً
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
+            Column(
               children: _availableTypes.map((t) {
-                final selected = _type == t.value;
-                return LayoutBuilder(
-                  builder: (context, boxConstraints) {
-                    // جعل مساحة الزر مرنة بحسب عرض الشاشة المتوفر
-                    final parentWidth = MediaQuery.sizeOf(context).width - (_isNarrow(context) ? 64 : 96);
-                    final targetWidth = parentWidth > 500 ? (parentWidth - 24) / 3 : (parentWidth - 12) / 2;
-
-                    return GestureDetector(
-                      onTap: () => _selectType(t.value),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: targetWidth < 140 ? double.infinity : targetWidth,
-                        decoration: BoxDecoration(
-                          color: selected ? t.bgColor : Colors.white,
-                          border: Border.all(color: selected ? t.bgColor : Colors.grey.shade300, width: 1.5),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: selected
-                              ? [BoxShadow(color: t.bgColor.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 3))]
-                              : null,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min, // يتكيف الطول مع المحتوى لمنع الـ Overflow بالأسفل
-                          children: [
-                            Icon(t.icon, color: selected ? Colors.white : t.color, size: 28),
-                            const SizedBox(height: 8),
-                            Text(
-                              t.label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                                color: selected ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              t.desc,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: selected ? Colors.white70 : Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildTypeCard(t),
                 );
               }).toList(),
             ),
@@ -907,8 +922,8 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: narrow ? 16 : 24, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        color: context.appNavBar,
+        border: Border(top: BorderSide(color: context.appBorder)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

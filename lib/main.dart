@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 // Configurations & Services
 import 'core/config/api_config.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 
 // Controllers (Providers)
 import 'presentation/student/dashboard_controller.dart';
@@ -35,6 +37,7 @@ void main() async {
     // Injection globale des contrôleurs pour toute l'application
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => ThemeController()),
         ChangeNotifierProvider(create: (_) => DashboardController()),
         ChangeNotifierProvider(create: (_) => ReclamationController()),
         ChangeNotifierProvider(create: (_) => NotesController()),
@@ -51,17 +54,14 @@ class IscaeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeCtrl = context.watch<ThemeController>();
+
     return MaterialApp(
       title: 'ISCAE Espace Étudiant',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0F2547), // Bleu institutionnel ISCAE
-          primary: const Color(0xFF0F2547),
-        ),
-        useMaterial3: true,
-        fontFamily: 'Cairo', // Style propre et moderne pour les textes
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: themeCtrl.themeMode,
       // On démarre systématiquement par le SplashScreen
       home: const SplashScreen(),
       routes: {

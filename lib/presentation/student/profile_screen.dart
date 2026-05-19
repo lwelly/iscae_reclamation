@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme/app_palette.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/utils/url_resolver.dart';
@@ -423,12 +424,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.grey.shade100,
+                color: context.appSurfaceLow,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 profile.matricule ?? '—',
-                style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: Colors.grey[700]),
+                style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: context.appMuted),
               ),
             ),
             const SizedBox(height: 12),
@@ -731,7 +732,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         prefixIcon: Icon(icon),
         border: const OutlineInputBorder(),
         filled: readOnly,
-        fillColor: readOnly ? Colors.grey.shade50 : null,
+        fillColor: readOnly ? context.appSurfaceLow : null,
         helperText: readOnly ? 'Non modifiable' : null,
       ),
     );
@@ -741,9 +742,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: context.appSurfaceLow,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: context.appBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -751,14 +752,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.lock_outline, size: 15, color: Colors.grey[600]),
+              Icon(Icons.lock_outline, size: 15, color: context.appMuted),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'INFORMATIONS ACADÉMIQUES (NON MODIFIABLES)',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.grey[600]),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: context.appMuted),
                 ),
               ),
             ],
@@ -878,7 +879,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 Expanded(
                   child: Text(
                     'Utilisez au moins 8 caractères avec des majuscules, chiffres et symboles.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[800]),
+                    style: TextStyle(fontSize: 12, color: context.appOnSurface),
                   ),
                 ),
               ],

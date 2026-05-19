@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_config.dart';
+import '../../core/theme/app_palette.dart';
+import '../../core/theme/theme_controller.dart';
 import '../../core/utils/url_resolver.dart';
 import '../auth/login_screen.dart';
 import 'create_reclamation_screen.dart';
@@ -27,12 +29,9 @@ class MainLayoutScreen extends StatefulWidget {
 class _MainLayoutScreenState extends State<MainLayoutScreen> {
   static const _drawerWidth = 260.0;
   static const _railWidth = 68.0;
-  static const _prefDarkMode = 'theme_dark_mode';
-
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
   bool _rail = false;
-  bool _isDark = false;
   Timer? _notifTimer;
 
   static const _pageTitles = {
@@ -46,62 +45,10 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   void initState() {
     super.initState();
-    _loadThemePreference();
     WidgetsBinding.instance.addPostFrameCallback((_) => _initData());
   }
 
-  Future<void> _loadThemePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final dark = prefs.getBool(_prefDarkMode) ?? false;
-    if (mounted) setState(() => _isDark = dark);
-  }
-
-  Future<void> _toggleDarkMode() async {
-    setState(() => _isDark = !_isDark);
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prefDarkMode, _isDark);
-  }
-
-  ThemeData _buildAppTheme() {
-    if (_isDark) {
-      const primary = Color(0xFF6366F1);
-      return ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: _mainBg,
-        colorScheme: const ColorScheme.dark(
-          primary: primary,
-          onPrimary: Colors.white,
-          surface: Color(0xFF1E1E2E),
-          onSurface: Color(0xFFE2E8F0),
-          outline: Color(0xFF334155),
-        ),
-        cardColor: const Color(0xFF1E1E2E),
-        dividerColor: const Color(0xFF334155),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1E1E2E),
-          foregroundColor: Color(0xFFE2E8F0),
-          elevation: 0,
-        ),
-      );
-    }
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.light,
-      scaffoldBackgroundColor: _mainBg,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF0F2547),
-        primary: const Color(0xFF0F2547),
-      ),
-      cardColor: Colors.white,
-      dividerColor: const Color(0xFFE2E8F0),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.white,
-        foregroundColor: Color(0xFF0F172A),
-        elevation: 0,
-      ),
-    );
-  }
+  bool get _isDark => context.watch<ThemeController>().isDark;
 
   SystemUiOverlayStyle get _overlayStyle => _isDark
       ? SystemUiOverlayStyle.light.copyWith(
@@ -136,9 +83,9 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   bool get _isMobile => MediaQuery.sizeOf(context).width < 768;
 
   Color get _drawerBg => _isDark ? const Color(0xFF16213E) : const Color(0xFF0F2D5E);
-  Color get _mainBg => _isDark ? const Color(0xFF0F0F1A) : const Color(0xFFF8FAFC);
-  Color get _appBarBg => _isDark ? const Color(0xFF1E1E2E) : Colors.white;
-  Color get _appBarBorder => _isDark ? const Color(0xFF2D3748) : const Color(0xFFE2E8F0);
+  Color get _mainBg => Theme.of(context).scaffoldBackgroundColor;
+  Color get _appBarBg => context.appNavBar;
+  Color get _appBarBorder => context.appBorder;
 
   void _toggleSidebar() {
     if (_isMobile) {
@@ -183,9 +130,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _overlayStyle,
-      child: Theme(
-        data: _buildAppTheme(),
-        child: Scaffold(
+      child: Scaffold(
           key: _scaffoldKey,
           backgroundColor: _mainBg,
           drawer: _isMobile ? Drawer(child: _buildDrawerContent(showLabels: true, expanded: true)) : null,
@@ -234,7 +179,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
           ],
           ),
         ),
-      ),
     );
   }
 
@@ -465,7 +409,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                       IconButton(
                         visualDensity: VisualDensity.compact,
                         tooltip: _isDark ? 'Mode clair' : 'Mode sombre',
-                        onPressed: _toggleDarkMode,
+                        onPressed: () => context.read<ThemeController>().toggle(),
                         icon: Icon(
                           _isDark ? Icons.wb_sunny_outlined : Icons.dark_mode_outlined,
                           color: _isDark ? const Color(0xFFFCD34D) : const Color(0xFF475569),
@@ -492,7 +436,6 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                         email: email,
                         photoUrl: photoUrl,
                         initials: initials,
-                        isDark: _isDark,
                         isMobile: _isMobile,
                         onProfile: () => _selectIndex(4),
                         onLogout: _logout,
@@ -515,7 +458,6 @@ class _UserMenuButton extends StatelessWidget {
   final String email;
   final String? photoUrl;
   final String initials;
-  final bool isDark;
   final bool isMobile;
   final VoidCallback onProfile;
   final VoidCallback onLogout;
@@ -526,7 +468,6 @@ class _UserMenuButton extends StatelessWidget {
     required this.email,
     required this.photoUrl,
     required this.initials,
-    required this.isDark,
     required this.isMobile,
     required this.onProfile,
     required this.onLogout,
@@ -534,10 +475,11 @@ class _UserMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: isDark ? const Color(0xFF1A1A2E) : Colors.white,
+      color: context.appCard,
       onSelected: (value) {
         if (value == 'profile') onProfile();
         if (value == 'logout') onLogout();

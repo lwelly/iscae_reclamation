@@ -77,10 +77,10 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 24, offset: const Offset(0, 8)),
+                          BoxShadow(color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.15), blurRadius: 24, offset: const Offset(0, 8)),
                         ],
                       ),
                       child: Column(
@@ -101,7 +101,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                               child: Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text('Déjà un compte ? ', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+                                  Text('Déjà un compte ? ', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                   TextButton(
                                     onPressed: _loading ? null : () => Navigator.pushReplacementNamed(context, '/login'),
                                     child: const Text('Se connecter', style: TextStyle(fontWeight: FontWeight.w600, color: AuthColors.primary)),

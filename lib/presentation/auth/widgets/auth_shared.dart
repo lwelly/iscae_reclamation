@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../../core/theme/app_palette.dart';
 
 const kIscaeLogoUrl =
     'https://th.bing.com/th/id/R.bb2cf5d4b7c5c26926598d033caa12d5?rik=qVW4UwQbTi2FBw&riu=http%3a%2f%2fiscae.mr%2fsites%2fdefault%2ffiles%2flogo-iscae.png';
@@ -290,18 +291,21 @@ class AuthFormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = context.isDarkMode;
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(maxWidth: 420),
       padding: padding ?? const EdgeInsets.symmetric(horizontal: 36, vertical: 40),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appCard,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 4)),
-          BoxShadow(color: AuthColors.title.withValues(alpha: 0.08), blurRadius: 40, offset: const Offset(0, 12)),
-        ],
-        border: Border.all(color: AuthColors.title.withValues(alpha: 0.06)),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 4)),
+                BoxShadow(color: AuthColors.title.withValues(alpha: 0.08), blurRadius: 40, offset: const Offset(0, 12)),
+              ],
+        border: Border.all(color: isDark ? context.appBorder : AuthColors.title.withValues(alpha: 0.06)),
       ),
       child: child,
     );
@@ -316,7 +320,10 @@ class AuthFieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
-      child: Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AuthColors.label, letterSpacing: 0.3)),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.appOnSurface, letterSpacing: 0.3),
+      ),
     );
   }
 }
@@ -491,39 +498,59 @@ class OtpInputRowState extends State<OtpInputRow> {
 
   @override
   Widget build(BuildContext context) {
+    const digitCount = 6;
+    const gap = 4.0;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final narrow = MediaQuery.sizeOf(context).width < 400;
+    final fontSize = narrow ? 18.0 : 22.0;
+    final borderColor = isDark ? const Color(0xFF334155) : AuthColors.fieldBorder;
+
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: List.generate(6, (i) {
-        return SizedBox(
-          width: 46,
-          child: TextField(
-            controller: _controllers[i],
-            focusNode: _focusNodes[i],
-            enabled: widget.enabled,
-            textAlign: TextAlign.center,
-            keyboardType: TextInputType.number,
-            maxLength: 1,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AuthColors.title),
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              counterText: '',
-              filled: true,
-              fillColor: AuthColors.fieldBg,
-              contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AuthColors.fieldBorder, width: 2)),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AuthColors.primary, width: 2),
+      children: List.generate(digitCount, (i) {
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(left: i == 0 ? 0 : gap / 2, right: i == digitCount - 1 ? 0 : gap / 2),
+            child: TextField(
+              controller: _controllers[i],
+              focusNode: _focusNodes[i],
+              enabled: widget.enabled,
+              textAlign: TextAlign.center,
+              keyboardType: TextInputType.number,
+              maxLength: 1,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Theme.of(context).colorScheme.onSurface : AuthColors.title,
               ),
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                counterText: '',
+                isDense: true,
+                filled: true,
+                fillColor: isDark ? const Color(0xFF252536) : AuthColors.fieldBg,
+                contentPadding: EdgeInsets.symmetric(vertical: narrow ? 10 : 12, horizontal: 2),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: borderColor, width: 1),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: borderColor, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: AuthColors.primary, width: 1.5),
+                ),
+              ),
+              onChanged: (v) {
+                if (v.length == 1 && i < digitCount - 1) {
+                  _focusNodes[i + 1].requestFocus();
+                } else if (v.isEmpty && i > 0) {
+                  _focusNodes[i - 1].requestFocus();
+                }
+                widget.onChanged(_controllers.map((c) => c.text).join());
+              },
             ),
-            onChanged: (v) {
-              if (v.length == 1 && i < 5) {
-                _focusNodes[i + 1].requestFocus();
-              } else if (v.isEmpty && i > 0) {
-                _focusNodes[i - 1].requestFocus();
-              }
-              widget.onChanged(_controllers.map((c) => c.text).join());
-            },
           ),
         );
       }),

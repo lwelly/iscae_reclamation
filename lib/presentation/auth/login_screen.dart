@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             child: Container(
               decoration: BoxDecoration(
                 gradient: wide ? null : AuthColors.brandGradient,
-                color: wide ? AuthColors.formBg : null,
+                color: wide ? Theme.of(context).scaffoldBackgroundColor : null,
               ),
               child: SafeArea(
                 child: Center(
@@ -52,10 +52,10 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
                           if (!wide) ...[
                             Center(child: AuthLogoCircle(size: 72, imageSize: 64)),
                             const SizedBox(height: 12),
-                            const Center(
+                            Center(
                               child: Text(
                                 'ISCAE Réclamations',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AuthColors.title),
+                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                               ),
                             ),
                             const SizedBox(height: 28),
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
                           Text(
                             '© ${DateTime.now().year} ISCAE — Tous droits réservés',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Colors.grey.shade400),
+                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),

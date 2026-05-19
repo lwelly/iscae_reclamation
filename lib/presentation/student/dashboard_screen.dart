@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_palette.dart';
 import '../../data/models/reclamation_model.dart';
 import 'create_reclamation_screen.dart';
 import 'dashboard_controller.dart';
@@ -536,16 +537,6 @@ class _StudentDashboardState extends State<StudentDashboard> {
 }
 
 enum _ChartType { bar, line }
-
-extension _DashTheme on BuildContext {
-  bool get dashIsDark => Theme.of(this).brightness == Brightness.dark;
-  Color get dashCardBg => dashIsDark ? const Color(0xFF1E1E2E) : Colors.white;
-  Color get dashCardBorder => dashIsDark ? const Color(0xFF334155) : Colors.grey.shade200;
-  Color get dashTextMuted => dashIsDark ? const Color(0xFF94A3B8) : Colors.grey.shade600;
-  Color get dashDivider => dashIsDark ? const Color(0xFF334155) : Colors.grey.shade100;
-  Color get dashToggleBg => dashIsDark ? const Color(0xFF2D3748) : Colors.grey.shade100;
-  Color get dashGridLine => dashIsDark ? const Color(0xFF334155) : Colors.grey.shade200;
-}
 
 class _KpiDef {
   final String label;
