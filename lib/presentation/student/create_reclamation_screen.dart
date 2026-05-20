@@ -656,7 +656,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*[\.,]?\d*'))],
             decoration: InputDecoration(
-              labelText: 'Note actuelle *',
+              labelText: 'Note actuelle ',
               prefixIcon: const Icon(Icons.numbers),
               suffixText: '/ 20',
               hintText: 'Entre 0 et 20 (ex: 12.5)',
@@ -675,7 +675,7 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
                 labelText: 'Note réclamée',
                 prefixIcon: const Icon(Icons.add_circle_outline),
                 suffixText: '/ 20',
-                hintText: 'Note que vous estimez mériter (optionnel)',
+                hintText: 'Note que vous estimez ',
                 border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
                 errorText: _errors['note_reclamee'],
               ),
@@ -708,75 +708,6 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
             onChanged: (_) => setState(() => _errors.remove('justification')),
           ),
           const SizedBox(height: 20),
-          Text('Pièce jointe (optionnel)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[700])),
-          const SizedBox(height: 8),
-          if (_docFile == null)
-            InkWell(
-              onTap: _pickDocument,
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.35), width: 2, strokeAlign: BorderSide.strokeAlignInside),
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.04),
-                ),
-                child: Column(
-                  children: [
-                    Icon(Icons.cloud_upload_outlined, size: 40, color: Theme.of(context).colorScheme.primary),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Cliquez pour ajouter un document',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                      textAlign: TextAlign.center,
-                    ),
-                    Text(
-                      'PDF, JPG ou PNG — max 5 Mo',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
-                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.15)),
-              ),
-              child: Row(
-                children: [
-                  Icon(_fileIcon(_docFile!), color: _fileIconColor(_docFile!), size: 32),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _docFile!.path.split(Platform.pathSeparator).last,
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          ReclamationUi.formatFileSize(_docFile!.lengthSync()),
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(icon: const Icon(Icons.close), onPressed: _removeDoc),
-                ],
-              ),
-            ),
-          if (_errors['document'] != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(_errors['document']!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
-            ),
         ],
       ),
     );
@@ -791,14 +722,6 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
       if (_type == 'cc' && _noteReclameeController.text.trim().isNotEmpty)
         (widget: _recapItem('Note réclamée', '${_formatNoteDisplay(_noteReclameeController.text)} / 20', bold: true), fullWidth: false),
       (widget: _recapItem('Justification', _justificationController.text, multiline: true), fullWidth: true),
-      if (_docFile != null)
-        (
-        widget: _recapItem(
-          'Pièce jointe',
-          '${_docFile!.path.split(Platform.pathSeparator).last} (${ReclamationUi.formatFileSize(_docFile!.lengthSync())})',
-        ),
-        fullWidth: true,
-        ),
     ];
 
     return _buildStepCard(

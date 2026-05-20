@@ -4,6 +4,7 @@ import '../../../data/models/reclamation_model.dart';
 import '../../../data/models/semestre_model.dart';
 import '../../../data/models/notification_model.dart';
 import '../../../core/config/api_config.dart';
+import '../../../core/utils/api_error_message.dart';
 
 class DashboardController extends ChangeNotifier {
   DashboardModel? _dashboard;
@@ -89,7 +90,7 @@ class DashboardController extends ChangeNotifier {
       }
       _setLoading(false);
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -100,7 +101,7 @@ class DashboardController extends ChangeNotifier {
       _dashboard = await ApiConfig().studentService.getDashboard();
       _setLoading(false);
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -111,7 +112,7 @@ class DashboardController extends ChangeNotifier {
       _semestres = await ApiConfig().studentService.getSemestres();
       _setLoading(false);
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -122,7 +123,7 @@ class DashboardController extends ChangeNotifier {
       _notifications = await ApiConfig().studentService.getNotifications();
       _setLoading(false);
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -151,7 +152,7 @@ class DashboardController extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -175,7 +176,7 @@ class DashboardController extends ChangeNotifier {
       )).toList();
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -188,7 +189,7 @@ class DashboardController extends ChangeNotifier {
       _notifications.removeWhere((n) => n.id == id);
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -198,7 +199,7 @@ class DashboardController extends ChangeNotifier {
       _notificationCounts = await ApiConfig().studentService.getNotificationCounts();
       notifyListeners();
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 

@@ -40,10 +40,8 @@ flutter:
   # تفعيل نظام تصميم Material Design من جوجل
   uses-material-design: true
 
-  # مجلد الملفات والملحقات (قم بإلغاء التعليق '#' عند إضافة صور الشعار أو الإشعارات)
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - assets/images/
 
   # إعداد الخطوط المخصصة للتطبيق (مثل خط Cairo المفضل للواجهات الأكاديمية)
   # fonts:

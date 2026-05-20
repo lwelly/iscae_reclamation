@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
+import '../../core/utils/api_response_message.dart';
 import '../models/semestre_model.dart';
 import '../models/note_model.dart';
 import '../models/notification_model.dart';
@@ -7,6 +9,7 @@ import '../models/module_model.dart';
 import '../models/document_model.dart';
 import '../models/dashboard_model.dart';
 import '../../core/constants/api_endpoints.dart';
+import '../../core/utils/url_resolver.dart';
 
 class StudentService {
   final Dio _dio;
@@ -153,17 +156,101 @@ class StudentService {
   }
 
   ProfileModel? _parseProfilePayload(dynamic payload) {
-    if (payload is Map<String, dynamic>) {
-      return ProfileModel.fromJson(payload);
+    if (payload is! Map) return null;
+    final map = Map<String, dynamic>.from(payload);
+
+    // { data: { user... } } déjà extrait par l'appelant — sinon imbriqué
+    if (map['user'] is Map) {
+      return ProfileModel.fromJson(Map<String, dynamic>.from(map['user'] as Map));
     }
-    return null;
+    if (map['student'] is Map && map['email'] == null && map['id'] == null) {
+      return ProfileModel.fromJson(Map<String, dynamic>.from(map['student'] as Map));
+    }
+
+    return ProfileModel.fromJson(map);
   }
 
-  String _apiErrorMessage(dynamic body, String fallback) {
-    if (body is Map && body['message'] != null) {
-      return body['message'].toString();
+  /// Aligné sur ProfileView.vue : photo_url / photo_path dans data ou à la racine.
+  ProfileModel _applyPhotoFromUploadResponse(ProfileModel base, dynamic body) {
+    if (body is! Map) return base;
+
+    final root = Map<String, dynamic>.from(body);
+    final data = root['data'];
+    final dataMap = data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+    final student = dataMap['student'] is Map ? Map<String, dynamic>.from(dataMap['student'] as Map) : dataMap;
+
+    String? pick(Map<String, dynamic> m, List<String> keys) {
+      for (final k in keys) {
+        final v = m[k];
+        if (v != null && v.toString().trim().isNotEmpty) return v.toString().trim();
+      }
+      return null;
     }
-    return fallback;
+
+    var url = pick(student, ['photo_url', 'photoUrl']) ??
+        pick(dataMap, ['photo_url', 'photoUrl']) ??
+        pick(root, ['photo_url', 'photoUrl']);
+
+    var path = pick(student, ['photo_path', 'photoPath', 'photo']) ??
+        pick(dataMap, ['photo_path', 'photoPath', 'photo']) ??
+        pick(root, ['photo_path', 'photoPath', 'photo']);
+
+    // Comme ProfileView.vue : chemin relatif peut être dans photo_url
+    if (url != null && path == null && !url.startsWith('http')) {
+      path = url;
+      url = null;
+    }
+
+    if (url != null || path != null) {
+      final built = resolveProfilePhoto(photoUrl: url, photoPath: path);
+      return base.copyWith(
+        photoUrl: url?.startsWith('http') == true ? url : (built.isNotEmpty ? built : url),
+        photoPath: path ?? url,
+      );
+    }
+
+    final parsed = _parseProfilePayload(data ?? root);
+    if (parsed != null && parsed.hasPhoto) return base.withPhotoFrom(parsed);
+    return base;
+  }
+
+  String _apiErrorMessage(dynamic body, String fallback) => extractApiMessage(body, fallback);
+
+  String _safePhotoFileName(String? fileName) {
+    var name = (fileName ?? 'photo.jpg').trim();
+    if (!name.contains('.')) name = '$name.jpg';
+    return name;
+  }
+
+  MediaType _photoMediaType(String fileName) {
+    final ext = fileName.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'png':
+        return MediaType('image', 'png');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      default:
+        return MediaType('image', 'jpeg');
+    }
+  }
+
+  Future<MultipartFile> _buildPhotoMultipart({
+    String? filePath,
+    List<int>? bytes,
+    String? fileName,
+  }) async {
+    final safeName = _safePhotoFileName(fileName);
+    final type = _photoMediaType(safeName);
+    if (bytes != null && bytes.isNotEmpty) {
+      return MultipartFile.fromBytes(bytes, filename: safeName, contentType: type);
+    }
+    if (filePath != null && filePath.isNotEmpty) {
+      return MultipartFile.fromFile(filePath, filename: safeName, contentType: type);
+    }
+    throw Exception('Fichier photo introuvable');
   }
 
   // ... (Le reste du fichier concernant les modules et documents reste identique)
@@ -182,19 +269,37 @@ class StudentService {
     }
   }
 
-  Future<ProfileModel> updateProfilePhoto(String photoPath) async {
+  Future<ProfileModel> updateProfilePhoto({
+    String? filePath,
+    List<int>? bytes,
+    String? fileName,
+    ProfileModel? currentProfile,
+  }) async {
     try {
-      final formData = FormData.fromMap({
-        'photo': await MultipartFile.fromFile(photoPath),
-      });
-      final response = await _dio.post(ApiEndpoints.profilePhoto, data: formData);
+      final file = await _buildPhotoMultipart(filePath: filePath, bytes: bytes, fileName: fileName);
+      final formData = FormData.fromMap({'photo': file});
+
+      // Comme ProfileView.vue : POST multipart, champ « photo », sans Content-Type forcé
+      final response = await _dio.post(
+        ApiEndpoints.profilePhoto,
+        data: formData,
+        options: Options(headers: {'Accept': 'application/json'}),
+      );
+
       final body = response.data;
-      if (response.statusCode == 200 && body is Map && body['success'] == true) {
-        final parsed = _parseProfilePayload(body['data']);
-        if (parsed != null) return parsed;
-        return getProfile();
+      if (!isApiSuccess(body, response.statusCode)) {
+        throw Exception(_apiErrorMessage(body, 'Échec de la mise à jour de la photo'));
       }
-      throw Exception(_apiErrorMessage(body, 'Échec de la mise à jour de la photo'));
+
+      final base = currentProfile ?? await getProfile();
+      var merged = _applyPhotoFromUploadResponse(base, body);
+      if (!merged.hasPhoto) {
+        try {
+          final reloaded = await getProfile();
+          merged = reloaded.withPhotoFrom(merged).mergePhotoFrom(base);
+        } catch (_) {}
+      }
+      return merged;
     } on DioException catch (e) {
       throw Exception(_apiErrorMessage(e.response?.data, e.message ?? 'Erreur réseau'));
     }

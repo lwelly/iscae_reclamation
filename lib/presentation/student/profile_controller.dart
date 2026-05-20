@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/api_config.dart';
 import '../../../data/models/profile_model.dart';
+import '../../../core/utils/api_error_message.dart';
 import '../../../data/models/reclamation_model.dart';
 
 class ProfileRecStats {
@@ -16,6 +18,9 @@ class ProfileRecStats {
 }
 
 class ProfileController extends ChangeNotifier {
+  static const _prefPhotoUrl = 'profile_photo_url';
+  static const _prefPhotoPath = 'profile_photo_path';
+
   ProfileModel? _profile;
   ProfileRecStats _recStats = const ProfileRecStats();
   bool _isLoading = false;
@@ -42,7 +47,9 @@ class ProfileController extends ChangeNotifier {
         ApiConfig().studentService.getProfile(),
         ApiConfig().reclamationService.getReclamations().catchError((_) => <ReclamationModel>[]),
       ]);
-      _profile = results[0] as ProfileModel;
+      var loaded = results[0] as ProfileModel;
+      loaded = await _applyCachedPhoto(loaded);
+      _profile = loaded.mergePhotoFrom(_profile);
       final recs = results[1] as List<ReclamationModel>;
       _recStats = ProfileRecStats(
         total: recs.length,
@@ -92,23 +99,53 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  Future<bool> updatePhoto(String photoPath) async {
+  Future<bool> updatePhoto({
+    String? path,
+    List<int>? bytes,
+    String? fileName,
+  }) async {
     _uploadingPhoto = true;
     _hasError = false;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await ApiConfig().studentService.updateProfilePhoto(photoPath);
-      await loadProfile();
+      final base = _profile ?? await ApiConfig().studentService.getProfile();
+      final updated = await ApiConfig().studentService.updateProfilePhoto(
+        filePath: path,
+        bytes: bytes,
+        fileName: fileName,
+        currentProfile: base,
+      );
+      _profile = base.withPhotoFrom(updated);
+      if (_profile!.hasPhoto) {
+        await _cachePhoto(_profile!);
+      } else {
+        throw Exception('Photo envoyée mais le serveur n\'a pas renvoyé d\'URL. Réessayez.');
+      }
       _uploadingPhoto = false;
       notifyListeners();
+      _softReloadProfile();
       return true;
     } catch (e) {
       _uploadingPhoto = false;
-      _setError(_formatError(e));
+      _errorMessage = _formatError(e);
+      _hasError = true;
+      notifyListeners();
       return false;
     }
+  }
+
+  /// Recharge le profil sans spinner, en conservant la photo.
+  Future<void> _softReloadProfile() async {
+    try {
+      final keep = _profile;
+      final loaded = await ApiConfig().studentService.getProfile();
+      var merged = loaded.mergePhotoFrom(keep);
+      merged = await _applyCachedPhoto(merged);
+      _profile = merged;
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<bool> updatePassword({
@@ -159,9 +196,26 @@ class ProfileController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _formatError(Object e) {
-    final msg = e.toString();
-    const prefix = 'Exception: ';
-    return msg.startsWith(prefix) ? msg.substring(prefix.length) : msg;
+  String _formatError(Object e) => formatApiError(e);
+
+  Future<void> _cachePhoto(ProfileModel profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (profile.photoUrl != null && profile.photoUrl!.isNotEmpty) {
+      await prefs.setString(_prefPhotoUrl, profile.photoUrl!);
+    }
+    if (profile.photoPath != null && profile.photoPath!.isNotEmpty) {
+      await prefs.setString(_prefPhotoPath, profile.photoPath!);
+    }
+  }
+
+  Future<ProfileModel> _applyCachedPhoto(ProfileModel profile) async {
+    if (profile.hasPhoto) return profile;
+    final prefs = await SharedPreferences.getInstance();
+    final url = prefs.getString(_prefPhotoUrl);
+    final path = prefs.getString(_prefPhotoPath);
+    if ((url == null || url.isEmpty) && (path == null || path.isEmpty)) {
+      return profile;
+    }
+    return profile.copyWith(photoUrl: url, photoPath: path);
   }
 }

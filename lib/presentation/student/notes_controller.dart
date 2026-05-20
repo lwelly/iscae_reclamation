@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/models/note_model.dart';
 import '../../../core/config/api_config.dart';
+import '../../../core/utils/api_error_message.dart';
 
 class NotesController extends ChangeNotifier {
   List<NoteModel> _notes = [];
@@ -31,7 +32,7 @@ class NotesController extends ChangeNotifier {
       );
       _setLoading(false);
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 
@@ -42,7 +43,7 @@ class NotesController extends ChangeNotifier {
       _selectedNote = await ApiConfig().studentService.getNoteById(id);
       _setLoading(false);
     } catch (e) {
-      _setError(e.toString());
+      _setError(formatApiError(e));
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../core/config/api_config.dart';
+import '../../core/utils/api_error_message.dart';
 import '../../data/models/notification_model.dart';
 
 class NotificationController extends ChangeNotifier {
@@ -63,7 +64,7 @@ class NotificationController extends ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       _hasError = true;
-      _errorMessage = e.toString();
+      _errorMessage = formatApiError(e);
       notifyListeners();
     }
   }
@@ -91,7 +92,7 @@ class NotificationController extends ChangeNotifier {
       return true;
     } catch (e) {
       _hasError = true;
-      _errorMessage = e.toString();
+      _errorMessage = formatApiError(e);
       return false;
     } finally {
       _markingIds.remove(id);
@@ -112,7 +113,7 @@ class NotificationController extends ChangeNotifier {
       return true;
     } catch (e) {
       _hasError = true;
-      _errorMessage = e.toString();
+      _errorMessage = formatApiError(e);
       return false;
     } finally {
       _markingAll = false;
@@ -130,7 +131,7 @@ class NotificationController extends ChangeNotifier {
       return true;
     } catch (e) {
       _hasError = true;
-      _errorMessage = e.toString();
+      _errorMessage = formatApiError(e);
       return false;
     } finally {
       _deletingIds.remove(id);
@@ -149,7 +150,7 @@ class NotificationController extends ChangeNotifier {
       return true;
     } catch (e) {
       _hasError = true;
-      _errorMessage = e.toString();
+      _errorMessage = formatApiError(e);
       return false;
     } finally {
       _clearingAll = false;

@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_palette.dart';
 import 'package:provider/provider.dart';
@@ -8,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../../core/utils/url_resolver.dart';
 import '../../data/models/profile_model.dart';
 import 'profile_controller.dart';
+import 'widgets/profile_avatar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -39,6 +42,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   bool _showPwdConfirm = false;
   bool _formPopulated = false;
   String? _localPhotoPath;
+  Uint8List? _localPhotoBytes;
+  int _photoCacheBust = 0;
 
   @override
   void initState() {
@@ -113,12 +118,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     return colors[name.codeUnitAt(0) % colors.length];
   }
 
-  String? _photoUrl(ProfileModel profile) {
-    if (_localPhotoPath != null) return _localPhotoPath;
-    final url = resolveProfilePhoto(photoUrl: profile.photoUrl, photoPath: profile.photoPath);
-    return url.isEmpty ? null : url;
-  }
-
   void _notify(String text, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -139,26 +138,55 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Future<void> _pickPhoto(ProfileController controller) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+      allowMultiple: false,
+      withData: true,
+      allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp'],
     );
     if (result == null || result.files.isEmpty) return;
-    final path = result.files.single.path;
-    if (path == null) return;
 
-    final file = File(path);
-    if (await file.length() > 3 * 1024 * 1024) {
+    final picked = result.files.single;
+    Uint8List? bytes = picked.bytes;
+    if (bytes == null && picked.path != null && !kIsWeb) {
+      bytes = await File(picked.path!).readAsBytes();
+    }
+    if (bytes == null) {
+      _notify(
+        kIsWeb
+            ? 'Impossible de lire l\'image. Réessayez ou utilisez JPG/PNG.'
+            : 'Impossible de lire l\'image sélectionnée.',
+        isError: true,
+      );
+      return;
+    }
+    if (bytes.length > 3 * 1024 * 1024) {
       _notify('Fichier trop lourd (max 3 Mo).', isError: true);
       return;
     }
 
-    setState(() => _localPhotoPath = path);
-    final ok = await controller.updatePhoto(path);
+    setState(() {
+      _localPhotoBytes = bytes;
+      _localPhotoPath = kIsWeb ? null : picked.path;
+    });
+
+    final ok = await controller.updatePhoto(
+      path: picked.path,
+      bytes: bytes,
+      fileName: picked.name,
+    );
     if (!mounted) return;
     if (ok) {
-      setState(() => _localPhotoPath = null);
+      setState(() {
+        _localPhotoBytes = null;
+        _localPhotoPath = null;
+        _formPopulated = false;
+        _photoCacheBust++;
+      });
       _notify('Photo de profil mise à jour.');
     } else {
-      setState(() => _localPhotoPath = null);
+      setState(() {
+        _localPhotoBytes = null;
+        _localPhotoPath = null;
+      });
       _notify(controller.errorMessage ?? 'Erreur lors de l\'upload.', isError: true);
     }
   }
@@ -361,18 +389,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Widget _buildIdentityCard(ProfileModel profile, ProfileController controller, Color primary) {
-    final photo = _photoUrl(profile);
     final stats = controller.recStats;
-    ImageProvider? avatarImage;
-    if (_localPhotoPath != null) {
-      avatarImage = FileImage(File(_localPhotoPath!));
-    } else if (photo != null) {
-      avatarImage = NetworkImage(photo);
-    }
 
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey.shade200)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: context.appBorder)),
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -380,13 +401,15 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             Stack(
               clipBehavior: Clip.none,
               children: [
-                CircleAvatar(
+                ProfileAvatar(
                   radius: 50,
+                  initials: _initials(profile),
                   backgroundColor: _avatarColor(profile),
-                  backgroundImage: avatarImage,
-                  child: avatarImage == null
-                      ? Text(_initials(profile), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold))
-                      : null,
+                  photoUrl: profile.photoUrl,
+                  photoPath: profile.photoPath,
+                  localFilePath: _localPhotoPath,
+                  localBytes: _localPhotoBytes,
+                  cacheBust: _photoCacheBust,
                 ),
                 Positioned(
                   bottom: 0,

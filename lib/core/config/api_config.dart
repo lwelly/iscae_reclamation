@@ -37,8 +37,8 @@ class ApiConfig {
     // Créer une instance Dio pour les services
     _studentDio = Dio(BaseOptions(
       baseUrl: ApiEndpoints.baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
     ));
 
     // Ajouter l'intercepteur pour le token

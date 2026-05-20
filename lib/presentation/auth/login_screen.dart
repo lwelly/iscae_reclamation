@@ -50,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (!wide) ...[
-                            Center(child: AuthLogoCircle(size: 72, imageSize: 64)),
+                            const Center(child: AuthLogoCircle(size: 72, imageSize: 64, onLightBackground: true)),
                             const SizedBox(height: 12),
                             Center(
                               child: Text(

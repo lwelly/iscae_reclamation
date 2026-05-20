@@ -8,8 +8,8 @@ class ApiClient {
   ApiClient() {
     // الاعتماد الكلي على الروابط الموحدة من كلاس الـ Endpoints مباشرة منعاً للتشتت
     _dio.options.baseUrl = ApiEndpoints.baseUrl;
-    _dio.options.connectTimeout = const Duration(seconds: 10);
-    _dio.options.receiveTimeout = const Duration(seconds: 10);
+    _dio.options.connectTimeout = const Duration(seconds: 30);
+    _dio.options.receiveTimeout = const Duration(seconds: 30);
 
     _dio.interceptors.add(
       InterceptorsWrapper(

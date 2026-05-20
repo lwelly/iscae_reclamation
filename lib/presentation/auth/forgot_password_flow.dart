@@ -99,7 +99,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (!wide) ...[
-                            Center(child: AuthLogoCircle(size: 66, imageSize: 54)),
+                            const Center(child: AuthLogoCircle(size: 66, imageSize: 54, onLightBackground: true)),
                             const SizedBox(height: 20),
                           ],
                           if (_step < 4) _buildProgressBar(),

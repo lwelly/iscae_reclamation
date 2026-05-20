@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../data/models/reclamation_model.dart';
 import '../../core/config/api_config.dart';
+import '../../core/utils/api_error_message.dart';
 
 class ReclamationController extends ChangeNotifier {
   List<ReclamationModel> _reclamations = [];
@@ -110,12 +111,5 @@ class ReclamationController extends ChangeNotifier {
     }
   }
 
-  // Helper pour rendre les messages d'erreurs lisibles à l'écran sans le texte "Exception:"
-  String _cleanErrorMessage(Object e) {
-    final msg = e.toString();
-    if (msg.startsWith('Exception: ')) {
-      return msg.replaceFirst('Exception: ', '');
-    }
-    return msg;
-  }
+  String _cleanErrorMessage(Object e) => formatApiError(e);
 }

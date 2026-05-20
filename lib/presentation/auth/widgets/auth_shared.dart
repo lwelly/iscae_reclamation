@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/theme/app_palette.dart';
 
-const kIscaeLogoUrl =
-    'https://th.bing.com/th/id/R.bb2cf5d4b7c5c26926598d033caa12d5?rik=qVW4UwQbTi2FBw&riu=http%3a%2f%2fiscae.mr%2fsites%2fdefault%2ffiles%2flogo-iscae.png';
+const kIscaeLogoAsset = 'assets/images/iscae_logo.png';
 
 const kDeviceFingerprint = 'flutter_app_device_fingerprint_xyz';
 
@@ -223,11 +222,37 @@ class _PreviewStep {
   const _PreviewStep(this.icon, this.color, this.bgActive, this.title, this.desc);
 }
 
+/// Logo ISCAE local (assets/images/iscae_logo.png).
+class IscaeLogoImage extends StatelessWidget {
+  final double size;
+  final BoxFit fit;
+
+  const IscaeLogoImage({super.key, required this.size, this.fit = BoxFit.contain});
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.asset(
+      kIscaeLogoAsset,
+      width: size,
+      height: size,
+      fit: fit,
+      errorBuilder: (_, __, ___) => Icon(Icons.school, size: size * 0.5, color: Colors.grey),
+    );
+  }
+}
+
 class AuthLogoCircle extends StatelessWidget {
   final double size;
   final double imageSize;
+  /// Sur fond clair (carte formulaire login / mot de passe oublié).
+  final bool onLightBackground;
 
-  const AuthLogoCircle({super.key, required this.size, required this.imageSize});
+  const AuthLogoCircle({
+    super.key,
+    required this.size,
+    required this.imageSize,
+    this.onLightBackground = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -236,18 +261,21 @@ class AuthLogoCircle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withValues(alpha: 0.15),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 16, offset: const Offset(0, 8))],
+        color: onLightBackground ? Colors.white : Colors.white.withValues(alpha: 0.15),
+        border: onLightBackground
+            ? Border.all(color: Colors.grey.shade200)
+            : Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: onLightBackground ? 0.08 : 0.3),
+            blurRadius: onLightBackground ? 8 : 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
+      padding: EdgeInsets.all(size * 0.06),
       child: ClipOval(
-        child: Image.network(
-          kIscaeLogoUrl,
-          width: imageSize,
-          height: imageSize,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => Icon(Icons.school, size: imageSize * 0.5, color: Colors.white),
-        ),
+        child: IscaeLogoImage(size: imageSize),
       ),
     );
   }

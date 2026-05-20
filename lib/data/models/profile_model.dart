@@ -53,36 +53,124 @@ class ProfileModel {
     this.niveau,
   });
 
+  bool get hasPhoto =>
+      (photoUrl != null && photoUrl!.isNotEmpty) || (photoPath != null && photoPath!.isNotEmpty);
+
+  /// Conserve la photo si le rechargement API ne la renvoie pas.
+  ProfileModel mergePhotoFrom(ProfileModel? other) {
+    if (other == null || !other.hasPhoto) return this;
+    if (hasPhoto) return this;
+    return withPhotoFrom(other);
+  }
+
+  /// Remplace la photo par celle de [other] (ex. réponse upload).
+  ProfileModel withPhotoFrom(ProfileModel? other) {
+    if (other == null || !other.hasPhoto) return this;
+    return copyWith(photoUrl: other.photoUrl, photoPath: other.photoPath);
+  }
+
+  ProfileModel copyWith({
+    String? photoUrl,
+    String? photoPath,
+  }) {
+    return ProfileModel(
+      id: id,
+      email: email,
+      role: role,
+      isActive: isActive,
+      lastLoginAt: lastLoginAt,
+      passwordChangedAt: passwordChangedAt,
+      studentId: studentId,
+      matricule: matricule,
+      nni: nni,
+      nom: nom,
+      prenom: prenom,
+      studentEmail: studentEmail,
+      phone: phone,
+      dateNaissance: dateNaissance,
+      lieuNaissance: lieuNaissance,
+      nationalite: nationalite,
+      adresse: adresse,
+      academicYear: academicYear,
+      status: status,
+      photoPath: photoPath ?? this.photoPath,
+      photoUrl: photoUrl ?? this.photoUrl,
+      filiere: filiere,
+      niveau: niveau,
+    );
+  }
+
+  static String? _firstNonEmpty(List<Map<String, dynamic>> sources, List<String> keys) {
+    for (final map in sources) {
+      for (final key in keys) {
+        final value = map[key];
+        if (value != null && value.toString().trim().isNotEmpty) {
+          return value.toString().trim();
+        }
+      }
+    }
+    return null;
+  }
+
   factory ProfileModel.fromJson(Map<String, dynamic> json) {
-    final rawStudent = json['student'];
-    final studentData = rawStudent is Map<String, dynamic> ? rawStudent : <String, dynamic>{};
+    // Réponse « student » seule (souvent après upload photo)
+    final isStudentRoot = json.containsKey('matricule') &&
+        !json.containsKey('student') &&
+        !json.containsKey('role');
+
+    final Map<String, dynamic> userData;
+    final Map<String, dynamic> studentData;
+
+    if (isStudentRoot) {
+      userData = json;
+      studentData = json;
+    } else {
+      userData = json;
+      final rawStudent = json['student'];
+      studentData = rawStudent is Map<String, dynamic> ? rawStudent : <String, dynamic>{};
+    }
+
+    final maps = [studentData, userData];
+    final photoUrl = _firstNonEmpty(maps, [
+      'photo_url',
+      'photoUrl',
+      'avatar_url',
+      'profile_photo_url',
+    ]);
+    final photoPath = _firstNonEmpty(maps, [
+      'photo_path',
+      'photoPath',
+      'photo',
+      'avatar',
+    ]);
+
     final rawFiliere = studentData['filiere'];
     final rawNiveau = studentData['niveau'];
     final filiereData = rawFiliere is Map<String, dynamic> ? rawFiliere : null;
     final niveauData = rawNiveau is Map<String, dynamic> ? rawNiveau : null;
 
     return ProfileModel(
-      id: json['id'] ?? 0,
-      email: json['email'] ?? '',
-      role: json['role'] ?? '',
-      isActive: json['is_active'] ?? true,
-      lastLoginAt: json['last_login_at'],
-      passwordChangedAt: json['password_changed_at'],
+      id: userData['id'] ?? userData['user_id'] ?? 0,
+      email: userData['email']?.toString() ?? studentData['email']?.toString() ?? '',
+      role: userData['role']?.toString() ?? 'student',
+      isActive: userData['is_active'] ?? true,
+      lastLoginAt: userData['last_login_at']?.toString(),
+      passwordChangedAt: userData['password_changed_at']?.toString(),
       studentId: studentData['id'],
-      matricule: studentData['matricule'],
-      nni: studentData['nni'],
-      nom: studentData['nom'] ?? studentData['last_name'],
-      prenom: studentData['prenom'] ?? studentData['first_name'],
-      studentEmail: studentData['email'],
-      phone: studentData['phone'],
-      dateNaissance: studentData['date_naissance'],
-      lieuNaissance: studentData['lieu_naissance'],
-      nationalite: studentData['nationalite'],
-      adresse: studentData['adresse'],
-      academicYear: studentData['academic_year'],
-      status: studentData['status'],
-      photoPath: studentData['photo_path'],
-      photoUrl: studentData['photo_url'],
+      matricule: studentData['matricule']?.toString(),
+      nni: studentData['nni']?.toString(),
+      nom: studentData['nom']?.toString() ?? studentData['last_name']?.toString(),
+      prenom: studentData['prenom']?.toString() ?? studentData['first_name']?.toString(),
+      studentEmail: studentData['email']?.toString(),
+      phone: studentData['phone']?.toString(),
+      dateNaissance: studentData['date_naissance']?.toString(),
+      lieuNaissance: studentData['lieu_naissance']?.toString(),
+      nationalite: studentData['nationalite']?.toString(),
+      adresse: studentData['adresse']?.toString(),
+      academicYear: studentData['academic_year']?.toString(),
+      status: studentData['status']?.toString(),
+      photoPath: photoPath,
+      photoUrl: photoUrl,
       filiere: filiereData != null
           ? Filiere.fromJson(filiereData)
           : (studentData['filiere_name'] != null

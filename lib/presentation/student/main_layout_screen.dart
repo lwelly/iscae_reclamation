@@ -15,9 +15,8 @@ import 'notification_screen.dart';
 import 'profile_controller.dart';
 import 'profile_screen.dart';
 import 'reclamation_screen.dart';
-
-const _logoUrl =
-    'https://th.bing.com/th/id/R.bb2cf5d4b7c5c26926598d033caa12d5?rik=qVW4UwQbTi2FBw&riu=http%3a%2f%2fiscae.mr%2fsites%2fdefault%2ffiles%2flogo-iscae.png';
+import '../auth/widgets/auth_shared.dart';
+import 'widgets/profile_avatar.dart';
 
 class MainLayoutScreen extends StatefulWidget {
   const MainLayoutScreen({super.key});
@@ -224,11 +223,8 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
               ],
             ),
             clipBehavior: Clip.antiAlias,
-            child: Image.network(
-              _logoUrl,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const Icon(Icons.school, color: Color(0xFF0F2D5E), size: 28),
-            ),
+            padding: const EdgeInsets.all(3),
+            child: const IscaeLogoImage(size: 40),
           ),
           if (showLabels) ...[
             const SizedBox(width: 10),
@@ -351,10 +347,10 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
             ? profile!.prenom!
             : fullName.split(' ').first;
         final email = profile?.studentEmail ?? profile?.email ?? '';
-        final rawPhoto = profile?.photoUrl;
-        final photoUrl = rawPhoto != null && rawPhoto.isNotEmpty
-            ? resolveMediaUrl(rawPhoto)
-            : null;
+        final photoUrl = profile != null
+            ? resolveProfilePhoto(photoUrl: profile.photoUrl, photoPath: profile.photoPath)
+            : '';
+        final resolvedPhoto = photoUrl.isNotEmpty ? photoUrl : null;
         final initials = _initials(fullName, email);
         final unread = notifCtrl.unreadCount;
 
@@ -434,7 +430,7 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                         firstName: firstName,
                         fullName: fullName,
                         email: email,
-                        photoUrl: photoUrl,
+                        photoUrl: resolvedPhoto,
                         initials: initials,
                         isMobile: _isMobile,
                         onProfile: () => _selectIndex(4),
@@ -489,11 +485,11 @@ class _UserMenuButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
+            ProfileAvatar(
               radius: 16,
+              initials: initials,
               backgroundColor: Colors.blue.shade700,
-              backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
-              child: photoUrl == null ? Text(initials, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)) : null,
+              photoUrl: photoUrl,
             ),
             if (!isMobile) ...[
               const SizedBox(width: 8),
@@ -511,11 +507,11 @@ class _UserMenuButton extends StatelessWidget {
           enabled: false,
           child: Row(
             children: [
-              CircleAvatar(
+              ProfileAvatar(
                 radius: 21,
+                initials: initials,
                 backgroundColor: Colors.blue.shade700,
-                backgroundImage: photoUrl != null ? NetworkImage(photoUrl!) : null,
-                child: photoUrl == null ? Text(initials, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)) : null,
+                photoUrl: photoUrl,
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -1,7 +1,8 @@
+import '../config/api_base_url.dart';
+
 class ApiEndpoints {
-  // الرابط الأساسي للسيرفر
-  // Pour Web/Émulateur Android sur le même ordinateur
-  static const String baseUrl = 'http://192.168.100.59:8000/api/v1';
+  /// Web → 127.0.0.1 | Mobile → IP LAN. Voir [ApiBaseUrl].
+  static String get baseUrl => ApiBaseUrl.value;
 
   // ── Auth Endpoints ─────────────────────────────────
   static const String verifyIdentity = '/auth/verify-identity';

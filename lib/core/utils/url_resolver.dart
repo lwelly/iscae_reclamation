@@ -6,10 +6,9 @@ String resolveMediaUrl(String? url) {
   final origin = ApiEndpoints.baseUrl.replaceAll(RegExp(r'/api/v1/?$'), '');
   if (url.startsWith('http://') || url.startsWith('https://')) {
     final uri = Uri.tryParse(url);
-    if (uri != null &&
-        (uri.host == 'localhost' || uri.host == '127.0.0.1')) {
-      final base = Uri.parse(origin);
-      return uri.replace(host: base.host, port: base.port).toString();
+    final base = Uri.parse(origin);
+    if (uri != null && uri.host != base.host) {
+      return uri.replace(scheme: base.scheme, host: base.host, port: base.port).toString();
     }
     return url;
   }
@@ -27,7 +26,9 @@ String resolveProfilePhoto({String? photoUrl, String? photoPath}) {
     return resolveMediaUrl(photoPath);
   }
   final origin = ApiEndpoints.baseUrl.replaceAll(RegExp(r'/api/v1/?$'), '');
-  final path = photoPath.replaceFirst(RegExp(r'^/'), '');
+  var path = photoPath.replaceFirst(RegExp(r'^/'), '');
   if (path.startsWith('storage/')) return '$origin/$path';
+  if (path.startsWith('public/')) return '$origin/${path.replaceFirst('public/', '')}';
+  // Chemin Laravel fréquent : students/xxx.jpg ou photos/xxx.jpg
   return '$origin/storage/$path';
 }
