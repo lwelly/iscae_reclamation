@@ -80,12 +80,12 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     });
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Réclamation annulée avec succès.')),
+        const SnackBar(content: Text('Réclamation annulée avec succès.', style: TextStyle(fontSize: 12))),
       );
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(controller.errorMessage ?? "Erreur lors de l'annulation.")),
+        SnackBar(content: Text(controller.errorMessage ?? "Erreur lors de l'annulation.", style: const TextStyle(fontSize: 12))),
       );
     }
   }
@@ -102,31 +102,31 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Consumer<ReclamationController>(
-        builder: (context, controller, _) {
-          final rec = controller.selectedReclamation;
-          final loading = controller.isLoadingDetail;
-          final error = controller.errorMessage;
+          builder: (context, controller, _) {
+            final rec = controller.selectedReclamation;
+            final loading = controller.isLoadingDetail;
+            final error = controller.errorMessage;
 
-          return Stack(
-            children: [
-              if (loading)
-                const Center(child: CircularProgressIndicator())
-              else if (error != null && rec == null)
-                _ErrorState(message: error, onBack: _handleBackPressed)
-              else if (rec != null)
-                _buildContent(context, rec, primary, controller),
-              if (_confirmCancelDialog && rec != null)
-                _CancelDialog(
-                  reference: rec.referenceNumber,
-                  reasonController: _cancelReasonController,
-                  cancelling: _cancelling,
-                  onClose: () => setState(() => _confirmCancelDialog = false),
-                  onConfirm: () => _cancelReclamation(rec),
-                ),
-            ],
-          );
-        },
-      ),
+            return Stack(
+              children: [
+                if (loading)
+                  const Center(child: CircularProgressIndicator())
+                else if (error != null && rec == null)
+                  _ErrorState(message: error, onBack: _handleBackPressed)
+                else if (rec != null)
+                    _buildContent(context, rec, primary, controller),
+                if (_confirmCancelDialog && rec != null)
+                  _CancelDialog(
+                    reference: rec.referenceNumber,
+                    reasonController: _cancelReasonController,
+                    cancelling: _cancelling,
+                    onClose: () => setState(() => _confirmCancelDialog = false),
+                    onConfirm: () => _cancelReclamation(rec),
+                  ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -134,32 +134,32 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
   Widget _buildStatusBanner(ReclamationModel rec, Color statusColor, {required bool narrow}) {
     final dateWidget = (rec.resolvedAt != null || rec.updatedAt.isNotEmpty)
         ? Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  ReclamationUi.formatDateTime(rec.resolvedAt ?? rec.updatedAt),
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          )
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.schedule, size: 12, color: Colors.grey[600]),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            ReclamationUi.formatDateTime(rec.resolvedAt ?? rec.updatedAt),
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]), // était 12
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    )
         : null;
 
     final mainRow = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: narrow ? 44 : 52,
-          height: narrow ? 44 : 52,
+          width: narrow ? 40 : 48,   // était 44/52
+          height: narrow ? 40 : 48,
           decoration: BoxDecoration(
             color: statusColor,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: narrow ? 22 : 28),
+          child: Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: narrow ? 20 : 24), // était 22/28
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -168,11 +168,11 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
             children: [
               Text(
                 ReclamationUi.statusLabel(rec.status),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: narrow ? 15 : 16),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: narrow ? 13 : 14), // était 15/16
               ),
               Text(
                 ReclamationUi.statusDesc(rec.status),
-                style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 11, color: Colors.grey[600]), // était 13
               ),
             ],
           ),
@@ -182,7 +182,7 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     );
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: ReclamationUi.statusBg(rec.status),
         borderRadius: BorderRadius.circular(12),
@@ -193,7 +193,7 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
         children: [
           mainRow,
           if (narrow && dateWidget != null) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             dateWidget,
           ],
         ],
@@ -250,7 +250,6 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 700;
         final pad = wide ? 24.0 : 16.0;
-
         final topInset = MediaQuery.paddingOf(context).top;
 
         return CustomScrollView(
@@ -276,48 +275,48 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
                               Text(
                                 "Suivez l'état de votre réclamation",
                                 style: TextStyle(
-                                  fontSize: wide ? 22 : 18,
+                                  fontSize: wide ? 18 : 15, // était 22/18
                                   fontWeight: FontWeight.w700,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: statusColor,
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: 18),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      ReclamationUi.statusLabel(rec.status),
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: statusColor,
+                                      borderRadius: BorderRadius.circular(24),
                                     ),
-                                  ],
-                                ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: 15),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          ReclamationUi.statusLabel(rec.status),
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11), // était 13
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade100,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '#${rec.referenceNumber}',
+                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey[700]), // était 13
+                                    ),
+                                  ),
+                                ],
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '#${rec.referenceNumber}',
-                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-                                ),
-                              ),
-                            ],
-                          ),
                             ],
                           ),
                         ),
@@ -339,15 +338,8 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     );
   }
 
-  Widget _buildNarrowLayout(
-    BuildContext context,
-    ReclamationModel rec,
-    Color primary,
-    ReclamationController controller,
-    Color statusColor,
-    List<_ProgressStep> steps,
-    Map<String, dynamic>? meeting,
-  ) {
+  Widget _buildNarrowLayout(BuildContext context, ReclamationModel rec, Color primary,
+      ReclamationController controller, Color statusColor, List<_ProgressStep> steps, Map<String, dynamic>? meeting) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -358,15 +350,8 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     );
   }
 
-  Widget _buildWideLayout(
-    BuildContext context,
-    ReclamationModel rec,
-    Color primary,
-    ReclamationController controller,
-    Color statusColor,
-    List<_ProgressStep> steps,
-    Map<String, dynamic>? meeting,
-  ) {
+  Widget _buildWideLayout(BuildContext context, ReclamationModel rec, Color primary,
+      ReclamationController controller, Color statusColor, List<_ProgressStep> steps, Map<String, dynamic>? meeting) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -383,13 +368,8 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     );
   }
 
-  List<Widget> _buildMainSections(
-    ReclamationModel rec,
-    Color statusColor,
-    List<_ProgressStep> steps,
-    Map<String, dynamic>? meeting, {
-    required bool stackModules,
-  }) {
+  List<Widget> _buildMainSections(ReclamationModel rec, Color statusColor, List<_ProgressStep> steps,
+      Map<String, dynamic>? meeting, {required bool stackModules}) {
     return [
       _buildStatusBanner(rec, statusColor, narrow: stackModules),
       const SizedBox(height: 16),
@@ -419,10 +399,10 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
               const Divider(),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Justification', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                child: Text('Justification', style: TextStyle(fontSize: 11, color: Colors.grey[600])), // était 13
               ),
               const SizedBox(height: 6),
-              Text(rec.justification, style: const TextStyle(fontSize: 14, height: 1.6)),
+              Text(rec.justification, style: const TextStyle(fontSize: 12, height: 1.6)), // était 14
             ],
           ],
         ),
@@ -450,10 +430,10 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
                 const Divider(),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Notes', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                  child: Text('Notes', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                 ),
                 const SizedBox(height: 4),
-                Text(meeting['notes'].toString()),
+                Text(meeting['notes'].toString(), style: const TextStyle(fontSize: 12)),
               ],
             ],
           ),
@@ -475,15 +455,15 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
         icon: Icons.history,
         child: rec.history.isEmpty
             ? Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Column(
-                  children: [
-                    Icon(Icons.timeline, size: 36, color: Colors.grey[400]),
-                    const SizedBox(height: 8),
-                    Text('Aucun historique disponible', style: TextStyle(color: Colors.grey[600])),
-                  ],
-                ),
-              )
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Column(
+            children: [
+              Icon(Icons.timeline, size: 32, color: Colors.grey[400]),
+              const SizedBox(height: 8),
+              Text('Aucun historique disponible', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            ],
+          ),
+        )
             : Column(children: rec.history.map((h) => _HistoryItem(history: h)).toList()),
       ),
     ];
@@ -515,17 +495,17 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (rec.escalationReason != null)
-                Text(rec.escalationReason!, style: const TextStyle(height: 1.5)),
+                Text(rec.escalationReason!, style: const TextStyle(height: 1.5, fontSize: 12)),
               if (rec.escalatedAt != null) ...[
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.schedule, size: 12, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
                         ReclamationUi.formatDateTime(rec.escalatedAt),
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -540,19 +520,19 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
       if (_canCancel(rec))
         OutlinedButton.icon(
           onPressed: () => setState(() => _confirmCancelDialog = true),
-          icon: const Icon(Icons.cancel_outlined, color: Colors.red),
-          label: const Text('Annuler la réclamation', style: TextStyle(color: Colors.red)),
+          icon: const Icon(Icons.cancel_outlined, color: Colors.red, size: 16),
+          label: const Text('Annuler la réclamation', style: TextStyle(color: Colors.red, fontSize: 12)),
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 44),
+            minimumSize: const Size(double.infinity, 40),
             side: const BorderSide(color: Colors.red),
           ),
         ),
       if (_canCancel(rec)) const SizedBox(height: 8),
       OutlinedButton.icon(
         onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.list),
-        label: const Text('Voir toutes mes réclamations'),
-        style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 44)),
+        icon: const Icon(Icons.list, size: 16),
+        label: const Text('Voir toutes mes réclamations', style: TextStyle(fontSize: 12)),
+        style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 40)),
       ),
     ];
   }
@@ -574,9 +554,9 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final circleSize = compact ? 26.0 : 32.0;
-    final iconSize = compact ? 13.0 : 16.0;
-    final labelSize = compact ? 9.0 : 11.0;
+    final circleSize = compact ? 24.0 : 28.0;   // était 26/32
+    final iconSize   = compact ? 12.0 : 14.0;   // était 13/16
+    final labelSize  = compact ? 8.0  : 10.0;   // était 9/11
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: compact ? 4 : 8, horizontal: compact ? 2 : 8),
@@ -601,12 +581,12 @@ class _ProgressBar extends StatelessWidget {
             borderColor = fillColor;
             child = Text(
               '${i + 1}',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: compact ? 10 : 12),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: compact ? 9 : 11),
             );
           } else {
             child = Text(
               '${i + 1}',
-              style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold, fontSize: compact ? 10 : 12),
+              style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.bold, fontSize: compact ? 9 : 11),
             );
           }
 
@@ -643,10 +623,10 @@ class _ProgressBar extends StatelessWidget {
                     color: s.rejected
                         ? const Color(0xFFDC2626)
                         : s.done
-                            ? const Color(0xFF059669)
-                            : s.active
-                                ? const Color(0xFF2563EB)
-                                : Colors.grey[600],
+                        ? const Color(0xFF059669)
+                        : s.active
+                        ? const Color(0xFF2563EB)
+                        : Colors.grey[600],
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -684,25 +664,25 @@ class _SectionCard extends StatelessWidget {
         side: BorderSide(color: context.appBorder),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(icon, color: iconColor ?? Theme.of(context).colorScheme.primary, size: 20),
+                Icon(icon, color: iconColor ?? Theme.of(context).colorScheme.primary, size: 17),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: 13,   // était 15
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             child,
           ],
         ),
@@ -721,31 +701,31 @@ class _InfoRow extends StatelessWidget {
   final bool noteClaim;
 
   const _InfoRow(
-    this.label,
-    this.value, {
-    this.mono = false,
-    this.chip = false,
-    this.chipColor,
-    this.note = false,
-    this.noteClaim = false,
-  });
+      this.label,
+      this.value, {
+        this.mono = false,
+        this.chip = false,
+        this.chipColor,
+        this.note = false,
+        this.noteClaim = false,
+      });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600]))),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600]))), // était 13
           if (chip)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: (chipColor ?? Colors.grey).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: chipColor)),
+              child: Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: chipColor)), // était 12
             )
           else
             Expanded(
@@ -753,20 +733,20 @@ class _InfoRow extends StatelessWidget {
               child: Align(
                 alignment: Alignment.centerRight,
                 child: Container(
-                  padding: note || noteClaim ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2) : null,
+                  padding: note || noteClaim ? const EdgeInsets.symmetric(horizontal: 7, vertical: 2) : null,
                   decoration: note || noteClaim
                       ? BoxDecoration(
-                          color: noteClaim ? const Color(0x1FEA580C) : const Color(0x1F2563EB),
-                          borderRadius: BorderRadius.circular(6),
-                        )
+                    color: noteClaim ? const Color(0x1FEA580C) : const Color(0x1F2563EB),
+                    borderRadius: BorderRadius.circular(6),
+                  )
                       : mono
-                          ? BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6))
-                          : null,
+                      ? BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(6))
+                      : null,
                   child: Text(
                     value,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 13,
+                      fontSize: 11,   // était 13
                       fontFamily: mono ? 'monospace' : null,
                       color: noteClaim ? const Color(0xFFC2410C) : note ? const Color(0xFF1D4ED8) : null,
                     ),
@@ -809,22 +789,22 @@ class _ModuleCard extends StatelessWidget {
         side: BorderSide(color: Colors.grey.shade200),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 40,      // était 44
+                  height: 40,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: iconGradient),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 22),
+                  child: Icon(icon, color: Colors.white, size: 20),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -832,7 +812,7 @@ class _ModuleCard extends StatelessWidget {
                       Text(
                         code,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,   // était 12
                           fontWeight: FontWeight.w700,
                           color: codeColor ?? const Color(0xFF6366F1),
                           letterSpacing: 0.5,
@@ -840,7 +820,7 @@ class _ModuleCard extends StatelessWidget {
                       ),
                       Text(
                         name,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), // était 14
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -849,18 +829,18 @@ class _ModuleCard extends StatelessWidget {
                 ),
               ],
             ),
-            const Divider(height: 24),
+            const Divider(height: 20),
             Row(
               children: stats
                   .map((s) => Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(s.$1, style: TextStyle(fontSize: 11, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
-                            Text(s.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-                          ],
-                        ),
-                      ))
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(s.$1, style: TextStyle(fontSize: 10, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis), // était 11
+                    Text(s.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis), // était 14
+                  ],
+                ),
+              ))
                   .toList(),
             ),
           ],
@@ -892,21 +872,26 @@ class _AdminResponseCard extends StatelessWidget {
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(12),
             color: color.withOpacity(0.08),
             child: Row(
               children: [
-                Icon(rejected ? Icons.cancel : Icons.check_circle, color: color, size: 20),
+                Icon(rejected ? Icons.cancel : Icons.check_circle, color: color, size: 18),
                 const SizedBox(width: 8),
-                const Expanded(child: Text("Réponse de l'administration", style: TextStyle(fontWeight: FontWeight.w600))),
+                Expanded(
+                  child: Text(
+                    "Réponse de l'administration",
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), // était défaut
+                  ),
+                ),
                 if (date != null)
-                  Text(ReclamationUi.formatDateTime(date), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text(ReclamationUi.formatDateTime(date), style: TextStyle(fontSize: 11, color: Colors.grey[600])), // était 12
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(response, style: const TextStyle(height: 1.7, fontSize: 14)),
+            padding: const EdgeInsets.all(14),
+            child: Text(response, style: const TextStyle(height: 1.7, fontSize: 12)), // était 14
           ),
         ],
       ),
@@ -921,37 +906,37 @@ class _AttachmentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
           Icon(
             ReclamationUi.attachmentIcon(attachment.mimeType),
             color: ReclamationUi.attachmentIconColor(attachment.mimeType),
-            size: 32,
+            size: 28,   // était 32
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   attachment.fileName,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12), // était défaut
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (attachment.fileSize != null)
-                  Text(ReclamationUi.formatFileSize(attachment.fileSize), style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text(ReclamationUi.formatFileSize(attachment.fileSize), style: TextStyle(fontSize: 11, color: Colors.grey[600])), // était 12
               ],
             ),
           ),
           if (attachment.url != null)
             IconButton(
-              icon: const Icon(Icons.download),
+              icon: const Icon(Icons.download, size: 20),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: attachment.url!));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Lien copié dans le presse-papiers')),
+                  const SnackBar(content: Text('Lien copié dans le presse-papiers', style: TextStyle(fontSize: 12))),
                 );
               },
             ),
@@ -969,7 +954,7 @@ class _HistoryItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(10),
@@ -985,22 +970,22 @@ class _HistoryItem extends StatelessWidget {
             children: [
               if (history.oldStatus != null) ...[
                 _StatusMiniChip(status: history.oldStatus!),
-                const Icon(Icons.arrow_forward, size: 12, color: Colors.grey),
+                const Icon(Icons.arrow_forward, size: 11, color: Colors.grey),
               ],
               _StatusMiniChip(status: history.newStatus, filled: true),
-              Text(ReclamationUi.formatDateTime(history.createdAt), style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              Text(ReclamationUi.formatDateTime(history.createdAt), style: TextStyle(fontSize: 10, color: Colors.grey[600])), // était 11
             ],
           ),
           if (history.comment != null && history.comment!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(history.comment!, style: const TextStyle(fontSize: 13, height: 1.4)),
+            const SizedBox(height: 5),
+            Text(history.comment!, style: const TextStyle(fontSize: 11, height: 1.4)), // était 13
           ],
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.person_outline, size: 12, color: Colors.grey[600]),
+              Icon(Icons.person_outline, size: 11, color: Colors.grey[600]),
               const SizedBox(width: 4),
-              Text(history.changedByLabel, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+              Text(history.changedByLabel, style: TextStyle(fontSize: 10, color: Colors.grey[600])), // était 11
             ],
           ),
         ],
@@ -1018,14 +1003,14 @@ class _StatusMiniChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = ReclamationUi.statusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
         color: filled ? color : color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         ReclamationUi.statusLabel(status),
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: filled ? Colors.white : color),
+        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: filled ? Colors.white : color), // était 10
       ),
     );
   }
@@ -1041,22 +1026,22 @@ class _QuickRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600]))),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600]))), // était 13
           if (chip != null)
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(color: chip!.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-              child: Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: chip)),
+              child: Text(value, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chip)), // était 11
             )
           else
             Expanded(
               flex: 2,
               child: Text(
                 value,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600), // était 13
                 textAlign: TextAlign.right,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
@@ -1079,14 +1064,14 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.description_outlined, size: 80, color: Colors.grey[400]),
+          Icon(Icons.description_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
-          Text(message, textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[700])),
+          Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Colors.grey[700])),
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back),
-            label: const Text('Retour'),
+            icon: const Icon(Icons.arrow_back, size: 16),
+            label: const Text('Retour', style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
@@ -1118,43 +1103,49 @@ class _CancelDialog extends StatelessWidget {
           margin: const EdgeInsets.all(24),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Row(
                   children: [
-                    Icon(Icons.warning_amber, color: Colors.red),
+                    Icon(Icons.warning_amber, color: Colors.red, size: 20),
                     SizedBox(width: 8),
-                    Text('Annuler la réclamation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text('Annuler la réclamation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), // était 16
                   ],
                 ),
-                const SizedBox(height: 16),
-                Text('Êtes-vous sûr de vouloir annuler la réclamation $reference ?'),
+                const SizedBox(height: 14),
+                Text('Êtes-vous sûr de vouloir annuler la réclamation $reference ?', style: const TextStyle(fontSize: 12)),
                 const SizedBox(height: 4),
-                const Text('Cette action est irréversible.', style: TextStyle(color: Colors.red, fontSize: 13)),
+                const Text('Cette action est irréversible.', style: TextStyle(color: Colors.red, fontSize: 11)), // était 13
                 const SizedBox(height: 12),
                 TextField(
                   controller: reasonController,
+                  style: const TextStyle(fontSize: 12),
                   decoration: const InputDecoration(
                     labelText: "Motif d'annulation (optionnel)",
+                    labelStyle: TextStyle(fontSize: 12),
                     border: OutlineInputBorder(),
+                    isDense: true,
                   ),
                   maxLines: 3,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(onPressed: cancelling ? null : onClose, child: const Text('Conserver')),
+                    TextButton(
+                      onPressed: cancelling ? null : onClose,
+                      child: const Text('Conserver', style: TextStyle(fontSize: 12)),
+                    ),
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: cancelling ? null : onConfirm,
                       style: FilledButton.styleFrom(backgroundColor: Colors.red),
                       child: cancelling
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text("Confirmer l'annulation"),
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Text("Confirmer l'annulation", style: TextStyle(fontSize: 12)),
                     ),
                   ],
                 ),

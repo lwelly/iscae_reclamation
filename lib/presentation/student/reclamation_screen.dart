@@ -44,11 +44,11 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
   }
 
   Map<String, int> _counts(List<ReclamationModel> list) => {
-        'all': list.length,
-        'pending': list.where((r) => ReclamationUi.pendingStatuses.contains(r.status)).length,
-        'resolved': list.where((r) => ReclamationUi.resolvedStatuses.contains(r.status)).length,
-        'rejected': list.where((r) => r.status == 'rejected').length,
-      };
+    'all': list.length,
+    'pending': list.where((r) => ReclamationUi.pendingStatuses.contains(r.status)).length,
+    'resolved': list.where((r) => ReclamationUi.resolvedStatuses.contains(r.status)).length,
+    'rejected': list.where((r) => r.status == 'rejected').length,
+  };
 
   List<ReclamationModel> _filtered(List<ReclamationModel> list) {
     var res = list;
@@ -142,15 +142,15 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                   children: [
                     Text(
                       '${list.length} réclamation${list.length > 1 ? 's' : ''} au total',
-                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]), // était 14
                     ),
                     FilledButton.icon(
                       onPressed: _openNew,
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('Nouvelle réclamation'),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Nouvelle réclamation', style: TextStyle(fontSize: 12)), // était défaut ~14
                       style: FilledButton.styleFrom(
                         backgroundColor: primary,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
                       ),
                     ),
                   ],
@@ -162,19 +162,21 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                   spacing: 8,
                   runSpacing: 8,
                   children: _filters.map((f) => _FilterChip(
-                        label: f.label,
-                        icon: f.icon,
-                        count: counts[f.key] ?? 0,
-                        active: _activeFilter == f.key,
-                        onTap: () => _setFilter(f.key),
-                      )).toList(),
+                    label: f.label,
+                    icon: f.icon,
+                    count: counts[f.key] ?? 0,
+                    active: _activeFilter == f.key,
+                    onTap: () => _setFilter(f.key),
+                  )).toList(),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _searchController,
+                  style: const TextStyle(fontSize: 12), // taille texte saisi
                   decoration: InputDecoration(
                     hintText: 'Rechercher...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
+                    hintStyle: const TextStyle(fontSize: 12),
+                    prefixIcon: const Icon(Icons.search, size: 18),
                     isDense: true,
                     filled: true,
                     fillColor: context.appInputFill,
@@ -188,15 +190,15 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                     ),
                     suffixIcon: _search.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _search = '';
-                                _page = 1;
-                              });
-                            },
-                          )
+                      icon: const Icon(Icons.clear, size: 16),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _search = '';
+                          _page = 1;
+                        });
+                      },
+                    )
                         : null,
                   ),
                   onChanged: (v) => setState(() {
@@ -212,7 +214,10 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                       children: [
                         CircularProgressIndicator(color: primary, strokeWidth: 3),
                         const SizedBox(height: 12),
-                        Text('Chargement de vos réclamations...', style: TextStyle(color: Colors.grey[600])),
+                        Text(
+                          'Chargement de vos réclamations...',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]), // était défaut
+                        ),
                       ],
                     ),
                   )
@@ -220,59 +225,78 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                   _StateBox(
                     child: Column(
                       children: [
-                        Icon(Icons.error_outline, color: Colors.red[700], size: 40),
+                        Icon(Icons.error_outline, color: Colors.red[700], size: 36),
                         const SizedBox(height: 12),
-                        Text(controller.errorMessage!, textAlign: TextAlign.center),
+                        Text(
+                          controller.errorMessage!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 12),
+                        ),
                         const SizedBox(height: 16),
                         OutlinedButton(
                           onPressed: () => controller.fetchReclamations(),
-                          child: const Text('Réessayer'),
+                          child: const Text('Réessayer', style: TextStyle(fontSize: 12)),
                         ),
                       ],
                     ),
                   )
                 else if (filtered.isEmpty)
-                  _StateBox(
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 72,
-                          height: 72,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            shape: BoxShape.circle,
+                    _StateBox(
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.inbox_outlined, size: 36, color: Colors.grey[500]),
                           ),
-                          child: Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[500]),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text('Aucune réclamation trouvée', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                        const SizedBox(height: 4),
-                        Text(
-                          _search.isNotEmpty
-                              ? 'Aucun résultat pour votre recherche.'
-                              : _activeFilter != 'all'
-                                  ? 'Aucune réclamation dans cette catégorie.'
-                                  : "Vous n'avez pas encore soumis de réclamation.",
-                          style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                          textAlign: TextAlign.center,
-                        ),
-                        if (_activeFilter == 'all' && _search.isEmpty) ...[
                           const SizedBox(height: 12),
-                          FilledButton.tonalIcon(
-                            onPressed: _openNew,
-                            icon: const Icon(Icons.add, size: 18),
-                            label: const Text('Soumettre une réclamation'),
+                          const Text(
+                            'Aucune réclamation trouvée',
+                            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13), // était 16
                           ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _search.isNotEmpty
+                                ? 'Aucun résultat pour votre recherche.'
+                                : _activeFilter != 'all'
+                                ? 'Aucune réclamation dans cette catégorie.'
+                                : "Vous n'avez pas encore soumis de réclamation.",
+                            style: TextStyle(color: Colors.grey[600], fontSize: 11), // était 13
+                            textAlign: TextAlign.center,
+                          ),
+                          if (_activeFilter == 'all' && _search.isEmpty) ...[
+                            const SizedBox(height: 12),
+                            FilledButton.tonalIcon(
+                              onPressed: _openNew,
+                              icon: const Icon(Icons.add, size: 16),
+                              label: const Text(
+                                'Soumettre une réclamation',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                  )
-                else
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final useCards = constraints.maxWidth < 720;
-                      if (useCards) {
-                        return _ReclamationCardList(
+                      ),
+                    )
+                  else
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final useCards = constraints.maxWidth < 720;
+                        if (useCards) {
+                          return _ReclamationCardList(
+                            rows: paginated,
+                            totalFiltered: filtered.length,
+                            page: safePage,
+                            totalPages: totalPages,
+                            onPageChanged: (p) => setState(() => _page = p),
+                            onRowTap: _goDetail,
+                          );
+                        }
+                        return _ReclamationTable(
                           rows: paginated,
                           totalFiltered: filtered.length,
                           page: safePage,
@@ -280,17 +304,8 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                           onPageChanged: (p) => setState(() => _page = p),
                           onRowTap: _goDetail,
                         );
-                      }
-                      return _ReclamationTable(
-                        rows: paginated,
-                        totalFiltered: filtered.length,
-                        page: safePage,
-                        totalPages: totalPages,
-                        onPageChanged: (p) => setState(() => _page = p),
-                        onRowTap: _goDetail,
-                      );
-                    },
-                  ),
+                      },
+                    ),
               ],
             ),
           );
@@ -335,7 +350,7 @@ class _FilterChip extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(20),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: active ? primary : inactiveBorder),
@@ -343,19 +358,19 @@ class _FilterChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: active ? Colors.white : inactiveText),
+              Icon(icon, size: 12, color: active ? Colors.white : inactiveText), // était 14
               const SizedBox(width: 5),
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 11,   // était 12.5
                   fontWeight: FontWeight.w500,
                   color: active ? Colors.white : context.appOnSurface,
                 ),
               ),
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: active ? Colors.white.withOpacity(0.25) : Colors.black.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(10),
@@ -363,7 +378,7 @@ class _FilterChip extends StatelessWidget {
                 child: Text(
                   '$count',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,   // était 11
                     fontWeight: FontWeight.w700,
                     color: active ? Colors.white : context.appOnSurface,
                   ),
@@ -426,7 +441,7 @@ class _ReclamationTable extends StatelessWidget {
         children: [
           // En-tête
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             color: context.appSurfaceLow,
             child: const Row(
               children: [
@@ -466,7 +481,7 @@ class _HeadCell extends StatelessWidget {
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: TextStyle(
-        fontSize: 11,
+        fontSize: 10,   // était 11
         fontWeight: FontWeight.w700,
         color: Colors.grey[600],
         letterSpacing: 0.6,
@@ -498,9 +513,9 @@ class _ReclamationCardList extends StatelessWidget {
     return Column(
       children: [
         ...rows.map((r) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _ReclamationCard(reclamation: r, onTap: () => onRowTap(r)),
-            )),
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _ReclamationCard(reclamation: r, onTap: () => onRowTap(r)),
+        )),
         _TableFooter(
           rowsCount: rows.length,
           totalFiltered: totalFiltered,
@@ -534,7 +549,7 @@ class _ReclamationCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: context.appBorder),
@@ -545,7 +560,7 @@ class _ReclamationCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(
                       color: primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
@@ -554,7 +569,7 @@ class _ReclamationCard extends StatelessWidget {
                       ref,
                       style: TextStyle(
                         fontFamily: 'monospace',
-                        fontSize: 12,
+                        fontSize: 11,   // était 12
                         fontWeight: FontWeight.w700,
                         color: primary,
                       ),
@@ -562,7 +577,7 @@ class _ReclamationCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: ReclamationUi.statusBg(reclamation.status),
                       borderRadius: BorderRadius.circular(20),
@@ -571,37 +586,37 @@ class _ReclamationCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 6,
-                          height: 6,
+                          width: 5,
+                          height: 5,
                           decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
                         ),
-                        const SizedBox(width: 5),
+                        const SizedBox(width: 4),
                         Text(
                           ReclamationUi.statusLabel(reclamation.status),
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor), // était 11
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Icon(Icons.chevron_right, size: 20, color: Colors.grey[500]),
+                  Icon(Icons.chevron_right, size: 18, color: Colors.grey[500]),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
                 reclamation.module.name.isNotEmpty ? reclamation.module.name : '—',
-                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), // était 15
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 6,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: ReclamationUi.typeBg(reclamation.type),
                       borderRadius: BorderRadius.circular(20),
@@ -609,7 +624,7 @@ class _ReclamationCard extends StatelessWidget {
                     child: Text(
                       ReclamationUi.typeLabel(reclamation.type),
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,   // était 12
                         fontWeight: FontWeight.w600,
                         color: ReclamationUi.typeColor(reclamation.type),
                       ),
@@ -618,11 +633,11 @@ class _ReclamationCard extends StatelessWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.schedule, size: 13, color: Colors.grey[500]),
-                      const SizedBox(width: 4),
+                      Icon(Icons.schedule, size: 11, color: Colors.grey[500]),
+                      const SizedBox(width: 3),
                       Text(
                         '${ReclamationUi.formatDateShort(reclamation.createdAt)} · ${ReclamationUi.formatTime(reclamation.createdAt)}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]), // était 12
                       ),
                     ],
                   ),
@@ -655,7 +670,7 @@ class _TableFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: context.appCard,
         borderRadius: BorderRadius.circular(12),
@@ -666,7 +681,7 @@ class _TableFooter extends StatelessWidget {
           Expanded(
             child: Text(
               '$rowsCount sur $totalFiltered réclamation${totalFiltered > 1 ? 's' : ''}',
-              style: TextStyle(fontSize: 12, color: context.appMuted),
+              style: TextStyle(fontSize: 11, color: context.appMuted), // était 12
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -675,11 +690,16 @@ class _TableFooter extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
+                  iconSize: 18,
                   icon: const Icon(Icons.chevron_left),
                   onPressed: page > 1 ? () => onPageChanged(page - 1) : null,
                 ),
-                Text('$page / $totalPages', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
+                Text(
+                  '$page / $totalPages',
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12), // était 13
+                ),
                 IconButton(
+                  iconSize: 18,
                   icon: const Icon(Icons.chevron_right),
                   onPressed: page < totalPages ? () => onPageChanged(page + 1) : null,
                 ),
@@ -711,7 +731,7 @@ class _TableRow extends StatelessWidget {
         onTap: onTap,
         hoverColor: primary.withOpacity(0.05),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
             border: Border(bottom: BorderSide(color: Colors.grey.shade100)),
           ),
@@ -720,7 +740,7 @@ class _TableRow extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
                     color: primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -729,7 +749,7 @@ class _TableRow extends StatelessWidget {
                     ref,
                     style: TextStyle(
                       fontFamily: 'monospace',
-                      fontSize: 12,
+                      fontSize: 11,   // était 12
                       fontWeight: FontWeight.w700,
                       color: primary,
                     ),
@@ -741,7 +761,7 @@ class _TableRow extends StatelessWidget {
                 flex: 3,
                 child: Text(
                   reclamation.module.name.isNotEmpty ? reclamation.module.name : '—',
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500), // était 13
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -750,7 +770,7 @@ class _TableRow extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
                       color: ReclamationUi.typeBg(reclamation.type),
                       borderRadius: BorderRadius.circular(20),
@@ -760,7 +780,7 @@ class _TableRow extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,   // était 11
                         fontWeight: FontWeight.w600,
                         color: ReclamationUi.typeColor(reclamation.type),
                       ),
@@ -775,11 +795,11 @@ class _TableRow extends StatelessWidget {
                   children: [
                     Text(
                       ReclamationUi.formatDateShort(reclamation.createdAt),
-                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500), // était 12.5
                     ),
                     Text(
                       ReclamationUi.formatTime(reclamation.createdAt),
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]), // était 11
                     ),
                   ],
                 ),
@@ -787,7 +807,7 @@ class _TableRow extends StatelessWidget {
               Expanded(
                 flex: 2,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: ReclamationUi.statusBg(reclamation.status),
                     borderRadius: BorderRadius.circular(20),
@@ -796,15 +816,15 @@ class _TableRow extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 6,
-                        height: 6,
+                        width: 5,
+                        height: 5,
                         decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle),
                       ),
-                      const SizedBox(width: 5),
+                      const SizedBox(width: 4),
                       Flexible(
                         child: Text(
                           ReclamationUi.statusLabel(reclamation.status),
-                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: statusColor),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: statusColor), // était 11
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -812,7 +832,7 @@ class _TableRow extends StatelessWidget {
                   ),
                 ),
               ),
-              Icon(Icons.chevron_right, size: 18, color: Colors.grey[500]),
+              Icon(Icons.chevron_right, size: 16, color: Colors.grey[500]),
             ],
           ),
         ),

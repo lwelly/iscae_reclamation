@@ -19,24 +19,24 @@ class _DashColors {
   static const chartBlue = Color(0xFF3B82F6);
 
   static Color statusColor(String status) => switch (status) {
-        'submitted' => submitted,
-        'in_review' => inReview,
-        'escalated' => escalated,
-        'resolved' => resolved,
-        'rejected' => rejected,
-        'closed' => closed,
-        _ => closed,
-      };
+    'submitted' => submitted,
+    'in_review' => inReview,
+    'escalated' => escalated,
+    'resolved' => resolved,
+    'rejected' => rejected,
+    'closed' => closed,
+    _ => closed,
+  };
 
   static String statusLabel(String status) => switch (status) {
-        'submitted' => 'Soumise',
-        'in_review' => 'En cours',
-        'escalated' => 'Escaladée',
-        'resolved' => 'Résolue',
-        'rejected' => 'Rejetée',
-        'closed' => 'Fermée',
-        _ => status,
-      };
+    'submitted' => 'Soumise',
+    'in_review' => 'En cours',
+    'escalated' => 'Escaladée',
+    'resolved' => 'Résolue',
+    'rejected' => 'Rejetée',
+    'closed' => 'Fermée',
+    _ => status,
+  };
 }
 
 class StudentDashboard extends StatefulWidget {
@@ -225,12 +225,12 @@ class _StudentDashboardState extends State<StudentDashboard> {
       children: [
         Text(
           'Bonjour, ${controller.studentFirstName}',
-          style: TextStyle(fontSize: narrow ? 18 : 20, fontWeight: FontWeight.w700),
+          style: TextStyle(fontSize: narrow ? 15 : 17, fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 4),
         Text(
           _todayLabel,
-          style: TextStyle(fontSize: 12, color: context.dashTextMuted),
+          style: TextStyle(fontSize: 11, color: context.dashTextMuted),
         ),
       ],
     );
@@ -238,7 +238,7 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final newBtn = FilledButton.icon(
       onPressed: _openNewReclamation,
       icon: const Icon(Icons.add, size: 18),
-      label: Text(narrow ? 'Nouvelle' : 'Nouvelle réclamation'),
+      label: Text(narrow ? 'Nouvelle' : 'Nouvelle réclamation', style: const TextStyle(fontSize: 13)),
       style: FilledButton.styleFrom(
         backgroundColor: accent,
         padding: EdgeInsets.symmetric(horizontal: narrow ? 10 : 14, vertical: 10),
@@ -307,105 +307,105 @@ class _StudentDashboardState extends State<StudentDashboard> {
         child: controller.isLoading
             ? const Center(child: CircularProgressIndicator())
             : Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
-                child: _chartType == _ChartType.bar
-                    ? BarChart(
-                        BarChartData(
-                          maxY: maxY,
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            getDrawingHorizontalLine: (_) => FlLine(color: context.dashGridLine, strokeWidth: 1),
-                          ),
-                          borderData: FlBorderData(show: false),
-                          titlesData: FlTitlesData(
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 28,
-                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
-                              ),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (v, meta) {
-                                  final i = v.toInt();
-                                  if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          barGroups: List.generate(monthly.data.length, (i) {
-                            return BarChartGroupData(
-                              x: i,
-                              barRods: [
-                                BarChartRodData(
-                                  toY: monthly.data[i],
-                                  color: _DashColors.chartBlue,
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                                  width: 22,
-                                ),
-                              ],
-                            );
-                          }),
-                        ),
-                      )
-                    : LineChart(
-                        LineChartData(
-                          maxY: maxY,
-                          gridData: FlGridData(
-                            show: true,
-                            drawVerticalLine: false,
-                            getDrawingHorizontalLine: (_) => FlLine(color: context.dashGridLine, strokeWidth: 1),
-                          ),
-                          borderData: FlBorderData(show: false),
-                          titlesData: FlTitlesData(
-                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                reservedSize: 28,
-                                getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
-                              ),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (v, meta) {
-                                  final i = v.toInt();
-                                  if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
-                                  return Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: Text(monthly.labels[i], style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: List.generate(monthly.data.length, (i) => FlSpot(i.toDouble(), monthly.data[i])),
-                              isCurved: true,
-                              color: _DashColors.chartBlue,
-                              barWidth: 2,
-                              dotData: const FlDotData(show: true),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                color: _DashColors.chartBlue.withOpacity(0.12),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+          padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+          child: _chartType == _ChartType.bar
+              ? BarChart(
+            BarChartData(
+              maxY: maxY,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (_) => FlLine(color: context.dashGridLine, strokeWidth: 1),
               ),
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 10, color: context.dashTextMuted)),
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (v, meta) {
+                      final i = v.toInt();
+                      if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(monthly.labels[i], style: TextStyle(fontSize: 10, color: context.dashTextMuted)),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              barGroups: List.generate(monthly.data.length, (i) {
+                return BarChartGroupData(
+                  x: i,
+                  barRods: [
+                    BarChartRodData(
+                      toY: monthly.data[i],
+                      color: _DashColors.chartBlue,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                      width: 22,
+                    ),
+                  ],
+                );
+              }),
+            ),
+          )
+              : LineChart(
+            LineChartData(
+              maxY: maxY,
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: false,
+                getDrawingHorizontalLine: (_) => FlLine(color: context.dashGridLine, strokeWidth: 1),
+              ),
+              borderData: FlBorderData(show: false),
+              titlesData: FlTitlesData(
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 28,
+                    getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontSize: 10, color: context.dashTextMuted)),
+                  ),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (v, meta) {
+                      final i = v.toInt();
+                      if (i < 0 || i >= monthly.labels.length) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(monthly.labels[i], style: TextStyle(fontSize: 10, color: context.dashTextMuted)),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: List.generate(monthly.data.length, (i) => FlSpot(i.toDouble(), monthly.data[i])),
+                  isCurved: true,
+                  color: _DashColors.chartBlue,
+                  barWidth: 2,
+                  dotData: const FlDotData(show: true),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: _DashColors.chartBlue.withOpacity(0.12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -422,9 +422,9 @@ class _StudentDashboardState extends State<StudentDashboard> {
     final counts = controller.statusCounts;
     final segments = legendDefs
         .map((s) {
-          final count = counts[s.$1] ?? 0;
-          return (key: s.$1, label: s.$2, color: s.$3, count: count, pct: total > 0 ? ((count / total) * 100).round() : 0);
-        })
+      final count = counts[s.$1] ?? 0;
+      return (key: s.$1, label: s.$2, color: s.$3, count: count, pct: total > 0 ? ((count / total) * 100).round() : 0);
+    })
         .where((s) => s.count > 0)
         .toList();
 
@@ -434,63 +434,63 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: controller.isLoading
           ? const SizedBox(height: 280, child: Center(child: CircularProgressIndicator()))
           : Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 180,
+              child: Stack(
+                alignment: Alignment.center,
                 children: [
-                  SizedBox(
-                    height: 180,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        if (segments.isEmpty)
-                          Center(child: Text('Aucune donnée', style: TextStyle(color: context.dashTextMuted)))
-                        else
-                          PieChart(
-                            PieChartData(
-                              sectionsSpace: 2,
-                              centerSpaceRadius: 58,
-                              sections: segments
-                                  .map(
-                                    (s) => PieChartSectionData(
-                                      value: s.count.toDouble(),
-                                      color: s.color,
-                                      radius: 28,
-                                      showTitle: false,
-                                    ),
-                                  )
-                                  .toList(),
-                            ),
+                  if (segments.isEmpty)
+                    Center(child: Text('Aucune donnée', style: TextStyle(color: context.dashTextMuted)))
+                  else
+                    PieChart(
+                      PieChartData(
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 58,
+                        sections: segments
+                            .map(
+                              (s) => PieChartSectionData(
+                            value: s.count.toDouble(),
+                            color: s.color,
+                            radius: 28,
+                            showTitle: false,
                           ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text('$total', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
-                            Text('Total', style: TextStyle(fontSize: 12, color: context.dashTextMuted)),
-                          ],
-                        ),
-                      ],
+                        )
+                            .toList(),
+                      ),
                     ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('$total', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface)),
+                      Text('Total', style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  ...segments.map((s) => Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Row(
-                          children: [
-                            Container(width: 10, height: 10, decoration: BoxDecoration(color: s.color, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(s.label, style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface))),
-                            Text('${s.count}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                            const SizedBox(width: 12),
-                            SizedBox(
-                              width: 38,
-                              child: Text('${s.pct}%', style: TextStyle(fontSize: 12, color: context.dashTextMuted), textAlign: TextAlign.right),
-                            ),
-                          ],
-                        ),
-                      )),
                 ],
               ),
             ),
+            const SizedBox(height: 16),
+            ...segments.map((s) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  Container(width: 10, height: 10, decoration: BoxDecoration(color: s.color, shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(s.label, style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface))),
+                  Text('${s.count}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 38,
+                    child: Text('${s.pct}%', style: TextStyle(fontSize: 11, color: context.dashTextMuted), textAlign: TextAlign.right),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
+      ),
     );
   }
 
@@ -510,28 +510,28 @@ class _StudentDashboardState extends State<StudentDashboard> {
       child: controller.isLoading
           ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
           : recent.isEmpty
-              ? Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 36),
-                  child: Column(
-                    children: [
-                      Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[400]),
-                      const SizedBox(height: 10),
-                      Text('Aucune réclamation pour le moment', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                      const SizedBox(height: 12),
-                      FilledButton.tonal(
-                        onPressed: _openNewReclamation,
-                        child: const Text('Créer une réclamation'),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  children: recent.map((r) => _RecentRow(
-                        reclamation: r,
-                        dateLabel: _formatDateShort(r.createdAt),
-                        onTap: () => _openDetail(r),
-                      )).toList(),
-                ),
+          ? Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: Column(
+          children: [
+            Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[400]),
+            const SizedBox(height: 10),
+            Text('Aucune réclamation pour le moment', style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+            const SizedBox(height: 12),
+            FilledButton.tonal(
+              onPressed: _openNewReclamation,
+              child: const Text('Créer une réclamation'),
+            ),
+          ],
+        ),
+      )
+          : Column(
+        children: recent.map((r) => _RecentRow(
+          reclamation: r,
+          dateLabel: _formatDateShort(r.createdAt),
+          onTap: () => _openDetail(r),
+        )).toList(),
+      ),
     );
   }
 }
@@ -556,7 +556,7 @@ class _KpiCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconSize = compact ? 30.0 : 36.0;
-    final valueSize = compact ? 22.0 : 26.0;
+    final valueSize = compact ? 20.0 : 24.0;
 
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 16),
@@ -588,7 +588,7 @@ class _KpiCard extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             kpi.label,
-            style: TextStyle(fontSize: compact ? 11 : 12, color: context.dashTextMuted),
+            style: TextStyle(fontSize: compact ? 10 : 11, color: context.dashTextMuted),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -632,10 +632,10 @@ class _ThemeCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
+                      Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
                       if (subtitle != null) ...[
                         const SizedBox(height: 3),
-                        Text(subtitle!, style: TextStyle(fontSize: 12, color: context.dashTextMuted)),
+                        Text(subtitle!, style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
                       ],
                     ],
                   ),
@@ -685,7 +685,7 @@ class _ChartToggle extends StatelessWidget {
     return GestureDetector(
       onTap: () => onChanged(type),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
           color: active ? primary : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
@@ -694,7 +694,7 @@ class _ChartToggle extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w500,
             color: active ? Colors.white : inactiveColor,
           ),
@@ -735,7 +735,7 @@ class _RecentRow extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(ref, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
+                    Text(ref, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
                     const SizedBox(height: 2),
                     Text(
                       reclamation.module.name.isNotEmpty ? reclamation.module.name : reclamation.type,
@@ -757,11 +757,11 @@ class _RecentRow extends StatelessWidget {
                     ),
                     child: Text(
                       _DashColors.statusLabel(reclamation.status),
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(dateLabel, style: TextStyle(fontSize: 11, color: context.dashTextMuted)),
+                  Text(dateLabel, style: TextStyle(fontSize: 10, color: context.dashTextMuted)),
                 ],
               ),
             ],

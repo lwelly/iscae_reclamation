@@ -92,8 +92,8 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                         boxShadow: Theme.of(context).brightness == Brightness.dark
                             ? null
                             : [
-                                BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 4)),
-                              ],
+                          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 24, offset: const Offset(0, 4)),
+                        ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,7 +114,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                               child: TextButton.icon(
                                 onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
                                 icon: const Icon(Icons.arrow_back, size: 14),
-                                label: const Text('Retour à la connexion', style: TextStyle(color: Color(0xFF6366F1))),
+                                label: const Text('Retour à la connexion', style: TextStyle(color: Color(0xFF6366F1), fontSize: 13)),
                               ),
                             ),
                           ],
@@ -139,9 +139,9 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           children: [
             Text(
               'ÉTAPE ${_step > 3 ? 3 : _step} SUR 3',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 1),
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 1),
             ),
-            Text('$_stepPercent%', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _stepColor)),
+            Text('$_stepPercent%', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _stepColor)),
           ],
         ),
         const SizedBox(height: 10),
@@ -174,7 +174,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                     child: Center(
                       child: done
                           ? const Icon(Icons.check, size: 14, color: Colors.white)
-                          : Text('$stepNum', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: current ? Colors.white : const Color(0xFF94A3B8))),
+                          : Text('$stepNum', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: current ? Colors.white : const Color(0xFF94A3B8))),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -220,9 +220,9 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(fontSize: 14, color: AuthColors.muted)),
+              Text(subtitle, style: const TextStyle(fontSize: 13, color: AuthColors.muted)),
             ],
           ),
         ),
@@ -254,7 +254,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
         const SizedBox(height: 8),
         Text(
           'Un code à 6 chiffres sera envoyé à votre adresse email.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
         ),
         if (_errorMsg.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -291,13 +291,13 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Valide 10 minutes', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+            Text('Valide 10 minutes', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
             if (resendCooldown > 0)
-              Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 12, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold))
+              Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 11, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold))
             else
               TextButton(
                 onPressed: _loading ? null : _handleSendOtp,
-                child: const Text('Renvoyer'),
+                child: const Text('Renvoyer', style: TextStyle(fontSize: 13)),
               ),
           ],
         ),
@@ -317,11 +317,11 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           onPressed: _loading
               ? null
               : () => setState(() {
-                    _step = 1;
-                    _errorMsg = '';
-                  }),
+            _step = 1;
+            _errorMsg = '';
+          }),
           icon: const Icon(Icons.arrow_back, size: 14),
-          label: const Text('Changer l\'adresse email'),
+          label: const Text('Changer l\'adresse email', style: TextStyle(fontSize: 13)),
         ),
       ],
     );
@@ -369,8 +369,8 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Force du mot de passe', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  Text(_strengthLabel, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _strengthColor)),
+                  Text('Force du mot de passe', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  Text(_strengthLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _strengthColor)),
                 ],
               ),
               const SizedBox(height: 8),
@@ -394,7 +394,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                 runSpacing: 6,
                 children: _passwordRules.map((r) {
                   return Chip(
-                    label: Text(r.text, style: const TextStyle(fontSize: 11)),
+                    label: Text(r.text, style: const TextStyle(fontSize: 10)),
                     avatar: Icon(r.met ? Icons.check : Icons.close, size: 14, color: r.met ? Colors.green : Colors.grey),
                     visualDensity: VisualDensity.compact,
                     backgroundColor: r.met ? Colors.green.shade50 : Colors.grey.shade100,
@@ -417,7 +417,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
         if (_confirmPasswordController.text.isNotEmpty && _passwordController.text != _confirmPasswordController.text)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text('Les mots de passe ne correspondent pas.', style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+            child: Text('Les mots de passe ne correspondent pas.', style: TextStyle(fontSize: 11, color: Colors.red.shade700)),
           ),
         if (_errorMsg.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -446,12 +446,12 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           child: const Icon(Icons.check_circle, size: 56, color: Color(0xFF10B981)),
         ),
         const SizedBox(height: 24),
-        const Text('Mot de passe réinitialisé !', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        const Text('Mot de passe réinitialisé !', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
         const SizedBox(height: 12),
         Text(
           'Votre mot de passe a été mis à jour avec succès.\nVous pouvez maintenant vous connecter.',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.5),
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
         ),
         const SizedBox(height: 28),
         AuthPrimaryButton(
@@ -477,7 +477,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
         children: [
           Icon(isWarning ? Icons.warning_amber_outlined : Icons.error_outline, color: color.shade800, size: 18),
           const SizedBox(width: 10),
-          Expanded(child: Text(_errorMsg, style: TextStyle(fontSize: 13, color: color.shade900))),
+          Expanded(child: Text(_errorMsg, style: TextStyle(fontSize: 12, color: color.shade900))),
           InkWell(onTap: () => setState(() => _errorMsg = ''), child: Icon(Icons.close, size: 16, color: color.shade400)),
         ],
       ),

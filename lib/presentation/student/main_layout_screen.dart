@@ -14,6 +14,7 @@ import 'notification_controller.dart';
 import 'notification_screen.dart';
 import 'profile_controller.dart';
 import 'profile_screen.dart';
+import 'reclamation_detail_screen.dart';
 import 'reclamation_screen.dart';
 import '../auth/widgets/auth_shared.dart';
 import 'widgets/profile_avatar.dart';
@@ -164,7 +165,21 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                               ),
                               const ReclamationScreen(),
                               CreateReclamationScreen(onBackToDashboard: () => _selectIndex(0)),
-                              const NotificationScreen(),
+                              NotificationScreen(
+                                onOpenReclamations: ({int? reclamationId}) {
+                                  _selectIndex(1);
+                                  if (reclamationId != null) {
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      if (!mounted) return;
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => ReclamationDetailScreen(id: reclamationId),
+                                        ),
+                                      );
+                                    });
+                                  }
+                                },
+                              ),
                               const ProfileScreen(),
                             ],
                           ),

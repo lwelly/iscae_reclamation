@@ -35,7 +35,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
 
   bool get _pwdMismatch =>
       _confirmPasswordController.text.isNotEmpty &&
-      _passwordController.text != _confirmPasswordController.text;
+          _passwordController.text != _confirmPasswordController.text;
 
   String _maskEmail(String email) {
     if (email.isEmpty) return '***@***.***';
@@ -67,10 +67,10 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                   children: [
                     AuthLogoCircle(size: 72, imageSize: 64),
                     const SizedBox(height: 12),
-                    const Text('ISCAE', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                    const Text('ISCAE', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                     Text(
                       'Création de votre compte étudiant',
-                      style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.8)),
+                      style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8)),
                     ),
                     const SizedBox(height: 24),
                     Container(
@@ -101,7 +101,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                               child: Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text('Déjà un compte ? ', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                  Text('Déjà un compte ? ', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                   TextButton(
                                     onPressed: _loading ? null : () => Navigator.pushReplacementNamed(context, '/login'),
                                     child: const Text('Se connecter', style: TextStyle(fontWeight: FontWeight.w600, color: AuthColors.primary)),
@@ -116,7 +116,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                     const SizedBox(height: 16),
                     Text(
                       '© ${DateTime.now().year} ISCAE — Tous droits réservés',
-                      style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
+                      style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6)),
                     ),
                   ],
                 ),
@@ -156,33 +156,33 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                 color: done
                     ? const Color(0xFF4CAF50)
                     : active
-                        ? const Color(0xFF1A237E)
-                        : const Color(0xFFE0E0E0),
+                    ? const Color(0xFF1A237E)
+                    : const Color(0xFFE0E0E0),
                 boxShadow: active ? [BoxShadow(color: const Color(0xFF1A237E).withValues(alpha: 0.45), blurRadius: 10)] : null,
               ),
               child: Center(
                 child: done
                     ? const Icon(Icons.check, color: Colors.white, size: 16)
                     : Text(
-                        '$stepNum',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: active ? Colors.white : const Color(0xFF757575),
-                        ),
-                      ),
+                  '$stepNum',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: active ? Colors.white : const Color(0xFF757575),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 4),
             Text(
               _steps[stepIndex],
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: active || done ? FontWeight.w600 : FontWeight.normal,
                 color: done
                     ? const Color(0xFF4CAF50)
                     : active
-                        ? const Color(0xFF1A237E)
-                        : const Color(0xFF757575),
+                    ? const Color(0xFF1A237E)
+                    : const Color(0xFF757575),
               ),
             ),
           ],
@@ -209,11 +209,11 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Vérification de votre identité', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text('Vérification de votre identité', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text(
           'Saisissez votre matricule et votre email personnel (Gmail, Hotmail, etc.) tels qu\'enregistrés par l\'administration.',
-          style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.5),
+          style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
         ),
         const SizedBox(height: 20),
         const AuthFieldLabel('Matricule *'),
@@ -235,7 +235,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         const SizedBox(height: 6),
         Text(
           'Saisissez votre adresse email personnelle (Gmail, Hotmail, etc.)',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 24),
         AuthPrimaryButton(
@@ -259,12 +259,12 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Vérification par email', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text('Vérification par email', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text.rich(
           TextSpan(
             text: 'Un code à 6 chiffres a été envoyé à ',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
             children: [TextSpan(text: _maskedEmail, style: const TextStyle(fontWeight: FontWeight.bold))],
           ),
         ),
@@ -283,9 +283,9 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(_studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                     if (filiereNiveau.isNotEmpty)
-                      Text(filiereNiveau, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                      Text(filiereNiveau, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                   ],
                 ),
               ),
@@ -308,7 +308,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
             onPressed: (resendCooldown > 0 || _loading) ? null : _handleResendOtp,
             child: Text(
               resendCooldown > 0 ? 'Renvoyer dans ${resendCooldown}s' : 'Renvoyer le code',
-              style: const TextStyle(color: AuthColors.primary),
+              style: const TextStyle(color: AuthColors.primary, fontSize: 13),
             ),
           ),
         ),
@@ -321,9 +321,9 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Définir votre mot de passe', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text('Définir votre mot de passe', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
-        Text('Choisissez un mot de passe sécurisé pour votre compte.', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+        Text('Choisissez un mot de passe sécurisé pour votre compte.', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
         const SizedBox(height: 20),
         const AuthFieldLabel('Mot de passe *'),
         AuthTextField(
@@ -350,7 +350,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         if (_pwdMismatch)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text('Les mots de passe ne correspondent pas.', style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+            child: Text('Les mots de passe ne correspondent pas.', style: TextStyle(fontSize: 11, color: Colors.red.shade700)),
           ),
         const SizedBox(height: 24),
         AuthPrimaryButton(
@@ -370,12 +370,12 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
       children: [
         const Icon(Icons.check_circle, size: 72, color: Color(0xFF4CAF50)),
         const SizedBox(height: 16),
-        const Text('Compte créé avec succès !', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+        const Text('Compte créé avec succès !', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
         const SizedBox(height: 8),
         Text.rich(
           TextSpan(
             text: 'Bienvenue ',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+            style: TextStyle(fontSize: 13, color: Colors.grey),
             children: [
               TextSpan(text: _studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
               const TextSpan(text: '. Redirection en cours...'),

@@ -84,8 +84,19 @@ class StudentService {
     try {
       final response = await _dio.get(ApiEndpoints.notifications);
       if (response.statusCode == 200 && response.data['success'] == true) {
-        final List<dynamic> data = response.data['data'];
-        return data.map((json) => NotificationModel.fromJson(json)).toList();
+        final raw = response.data['data'];
+        final List<dynamic> list;
+        if (raw is List) {
+          list = raw;
+        } else if (raw is Map && raw['data'] is List) {
+          list = raw['data'] as List;
+        } else {
+          list = [];
+        }
+        return list
+            .whereType<Map>()
+            .map((json) => NotificationModel.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
       }
       throw Exception('Failed to load notifications');
     } on DioException catch (e) {

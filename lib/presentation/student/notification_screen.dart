@@ -8,7 +8,9 @@ import 'notification_ui_helpers.dart';
 import 'reclamation_detail_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
-  const NotificationScreen({super.key});
+  final void Function({int? reclamationId})? onOpenReclamations;
+
+  const NotificationScreen({super.key, this.onOpenReclamations});
 
   @override
   State<NotificationScreen> createState() => _NotificationScreenState();
@@ -28,7 +30,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => context.read<NotificationController>().loadNotifications());
+    Future.microtask(
+          () => context.read<NotificationController>().loadNotifications(),
+    );
   }
 
   void _onTabChanged(String tab) {
@@ -38,53 +42,66 @@ class _NotificationScreenState extends State<NotificationScreen> {
     });
   }
 
-  List<NotificationModel> _paginated(NotificationController controller) {
-    final list = controller.filtered(_activeTab);
+  List<NotificationModel> _paginated(NotificationController c) {
+    final list = c.filtered(_activeTab);
     final start = (_page - 1) * _perPage;
     if (start >= list.length) return [];
-    final end = (start + _perPage).clamp(0, list.length);
-    return list.sublist(start, end);
+    return list.sublist(start, (start + _perPage).clamp(0, list.length));
   }
 
-  int _totalPages(NotificationController controller) {
-    final len = controller.filtered(_activeTab).length;
-    if (len == 0) return 0;
-    return (len / _perPage).ceil();
+  int _totalPages(NotificationController c) {
+    final len = c.filtered(_activeTab).length;
+    return len == 0 ? 0 : (len / _perPage).ceil();
   }
 
-  List<({String date, List<NotificationModel> items})> _grouped(List<NotificationModel> list) {
+  List<({String date, List<NotificationModel> items})> _grouped(
+      List<NotificationModel> list,
+      ) {
     final map = <String, List<NotificationModel>>{};
     for (final n in list) {
-      final label = NotificationUi.dateLabel(n.createdAt);
-      map.putIfAbsent(label, () => []).add(n);
+      map.putIfAbsent(NotificationUi.dateLabel(n.createdAt), () => []).add(n);
     }
     return map.entries.map((e) => (date: e.key, items: e.value)).toList();
   }
 
-  Future<void> _handleClick(NotificationModel notif, NotificationController controller) async {
-    if (!notif.isRead) {
-      await controller.markAsRead(notif.id);
+  int? _reclamationIdFrom(NotificationModel notif) {
+    final fromField = notif.reclamationId;
+    if (fromField != null) {
+      final id = int.tryParse(fromField);
+      if (id != null && id > 0) return id;
     }
-    if (!mounted) return;
-
-    final type = notif.type ?? '';
-    final data = notif.data ?? {};
-    final reclamationId = notif.reclamationId ?? data['reclamation_id']?.toString();
-
-    if (type.contains('reclamation') ||
-        type.contains('status') ||
-        type.contains('escalat') ||
-        type.contains('resolved') ||
-        type.contains('rejected') ||
-        type.contains('meeting')) {
-      if (reclamationId != null) {
-        final id = int.tryParse(reclamationId);
-        if (id != null) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: id)));
-          return;
+    final data = notif.data;
+    if (data != null) {
+      for (final key in ['reclamation_id', 'id']) {
+        final v = data[key];
+        if (v != null) {
+          final id = int.tryParse(v.toString());
+          if (id != null && id > 0) return id;
         }
       }
     }
+    return null;
+  }
+
+  Future<void> _handleClick(
+      NotificationModel notif,
+      NotificationController controller,
+      ) async {
+    if (!notif.isRead) await controller.markAsRead(notif.id);
+    if (!mounted) return;
+
+    final reclamationId = _reclamationIdFrom(notif);
+
+    if (widget.onOpenReclamations != null) {
+      widget.onOpenReclamations!(reclamationId: reclamationId);
+      return;
+    }
+
+    await Navigator.of(context, rootNavigator: true).pushNamed('/reclamations');
+    if (!mounted || reclamationId == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: reclamationId)),
+    );
   }
 
   @override
@@ -116,20 +133,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
             else if (controller.hasError && controller.notifications.isEmpty)
               _buildError(controller)
             else if (filtered.isEmpty)
-              _buildEmpty()
-            else ...[
-              ...groups.expand((g) => [
-                _dateLabel(g.date),
-                ...g.items.map((n) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _buildNotifCard(n, controller, primary),
-                    )),
-              ]),
-              if (totalPages > 1) ...[
-                const SizedBox(height: 24),
-                _buildPagination(totalPages),
-              ],
-            ],
+                _buildEmpty()
+              else ...[
+                  ...groups.expand(
+                        (g) => [
+                      _dateLabel(g.date),
+                      ...g.items.map(
+                            (n) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _buildNotifCard(n, controller, primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (totalPages > 1) ...[
+                    const SizedBox(height: 24),
+                    _buildPagination(totalPages),
+                  ],
+                ],
           ],
         ),
       ),
@@ -145,7 +166,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
       children: [
         Text(
           'Notifications',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: context.appOnSurface),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: context.appOnSurface,
+          ),
         ),
         Wrap(
           spacing: 8,
@@ -155,9 +180,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
               OutlinedButton.icon(
                 onPressed: controller.markingAll ? null : () => controller.markAllAsRead(),
                 icon: controller.markingAll
-                    ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: primary))
+                    ? SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: primary),
+                )
                     : Icon(Icons.done_all, size: 18, color: primary),
-                label: Text('Tout marquer lu', style: TextStyle(color: primary)),
+                label: Text('Tout marquer lu', style: TextStyle(color: primary, fontSize: 13)),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: primary.withValues(alpha: 0.5)),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -169,7 +198,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ? null
                   : () => _showClearAllDialog(controller),
               icon: const Icon(Icons.delete_sweep_outlined, size: 18, color: Colors.red),
-              label: const Text('Tout effacer', style: TextStyle(color: Colors.red)),
+              label: const Text('Tout effacer', style: TextStyle(color: Colors.red, fontSize: 13)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.red.withValues(alpha: 0.45)),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -185,7 +214,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
   Widget _buildFilters(NotificationController controller, Color primary) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: context.appBorder)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.appBorder),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Wrap(
@@ -200,7 +232,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               label: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(tab.$2),
+                  Text(tab.$2, style: const TextStyle(fontSize: 13)),
                   if (count > 0) ...[
                     const SizedBox(width: 6),
                     CircleAvatar(
@@ -208,7 +240,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       backgroundColor: selected ? Colors.white : primary,
                       child: Text(
                         count > 99 ? '99+' : '$count',
-                        style: TextStyle(fontSize: 10, color: selected ? primary : Colors.white),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: selected ? primary : Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -217,7 +252,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
               onSelected: (_) => _onTabChanged(tab.$1),
               selectedColor: primary,
               side: BorderSide(color: selected ? primary : context.appBorder),
-              labelStyle: TextStyle(color: selected ? Colors.white : context.appOnSurface, fontWeight: FontWeight.w600),
+              labelStyle: TextStyle(
+                color: selected ? Colors.white : context.appOnSurface,
+                fontWeight: FontWeight.w600,
+              ),
               showCheckmark: false,
             );
           }).toList(),
@@ -234,9 +272,15 @@ class _NotificationScreenState extends State<NotificationScreen> {
           children: [
             const Icon(Icons.error_outline, size: 48, color: Colors.red),
             const SizedBox(height: 12),
-            Text(controller.errorMessage ?? 'Erreur de chargement', textAlign: TextAlign.center),
+            Text(
+              controller.errorMessage ?? 'Erreur de chargement',
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 16),
-            FilledButton(onPressed: () => controller.loadNotifications(), child: const Text('Réessayer')),
+            FilledButton(
+              onPressed: () => controller.loadNotifications(),
+              child: const Text('Réessayer'),
+            ),
           ],
         ),
       ),
@@ -249,16 +293,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
         : 'Vous n\'avez pas encore reçu de notifications.';
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: context.appBorder)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: context.appBorder),
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
         child: Column(
           children: [
             Icon(Icons.notifications_off_outlined, size: 56, color: context.appMuted),
             const SizedBox(height: 16),
-            Text('Aucune notification', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.appOnSurface)),
+            Text(
+              'Aucune notification',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: context.appOnSurface,
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(message, textAlign: TextAlign.center, style: TextStyle(color: context.appMuted)),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(fontSize: 13, color: context.appMuted)),
           ],
         ),
       ),
@@ -271,7 +325,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
       child: Text(
         date.toUpperCase(),
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
           letterSpacing: 1,
           color: context.appMuted,
@@ -280,12 +334,16 @@ class _NotificationScreenState extends State<NotificationScreen> {
     );
   }
 
-  Widget _buildNotifCard(NotificationModel notif, NotificationController controller, Color primary) {
-    final type = notif.type;
-    final typeColor = NotificationUi.color(type);
+  Widget _buildNotifCard(
+      NotificationModel notif,
+      NotificationController controller,
+      Color primary,
+      ) {
+    final type = notif.type ?? '';
+    final typeColor = _notifColor(context, type);
     final unread = !notif.isRead;
-
     final border = context.appBorder;
+
     return Material(
       color: unread ? primary.withValues(alpha: 0.05) : context.appCard,
       borderRadius: BorderRadius.circular(12),
@@ -311,10 +369,10 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: NotificationUi.bg(type),
+                    color: typeColor.withValues(alpha: context.isDarkMode ? 0.2 : 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(NotificationUi.icon(type), color: typeColor, size: 18),
+                  child: Icon(_notifIcon(type), color: typeColor, size: 18),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -331,7 +389,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
-                                fontSize: 14,
+                                fontSize: 13,
                                 color: context.appOnSurface,
                               ),
                             ),
@@ -345,25 +403,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 4),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Chip(
-                          label: Text(NotificationUi.typeLabel(type), style: const TextStyle(fontSize: 10)),
+                          label: Text(
+                            _notifTypeLabel(type),
+                            style: const TextStyle(fontSize: 10),
+                          ),
                           backgroundColor: typeColor.withValues(alpha: context.isDarkMode ? 0.2 : 0.12),
-                          labelStyle: TextStyle(color: typeColor, fontWeight: FontWeight.w600),
+                          labelStyle: TextStyle(
+                            color: typeColor,
+                            fontWeight: FontWeight.w600,
+                          ),
                           visualDensity: VisualDensity.compact,
                           padding: EdgeInsets.zero,
                           side: BorderSide.none,
                         ),
                       ),
                       if (notif.body.isNotEmpty) ...[
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         Text(
                           notif.body,
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 13, color: context.appMuted, height: 1.4),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.appMuted,
+                            height: 1.4,
+                          ),
                         ),
                       ],
                       const SizedBox(height: 10),
@@ -378,26 +446,30 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           const Spacer(),
                           if (unread)
                             TextButton(
-                              onPressed: controller.isMarking(notif.id)
-                                  ? null
-                                  : () => controller.markAsRead(notif.id),
+                              onPressed: controller.isMarking(notif.id) ? null : () => controller.markAsRead(notif.id),
                               style: TextButton.styleFrom(
                                 visualDensity: VisualDensity.compact,
                                 padding: const EdgeInsets.symmetric(horizontal: 8),
                               ),
                               child: controller.isMarking(notif.id)
-                                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                  : const Text('Marquer lu', style: TextStyle(fontSize: 12)),
+                                  ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                                  : const Text('Marquer lu', style: TextStyle(fontSize: 11)),
                             ),
                           IconButton(
                             icon: controller.isDeleting(notif.id)
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                                 : const Icon(Icons.delete_outline, size: 20),
                             color: Colors.red,
                             visualDensity: VisualDensity.compact,
-                            onPressed: controller.isDeleting(notif.id)
-                                ? null
-                                : () => controller.deleteNotification(notif.id),
+                            onPressed: controller.isDeleting(notif.id) ? null : () => controller.deleteNotification(notif.id),
                           ),
                         ],
                       ),
@@ -448,6 +520,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 child: Text(
                   '$pageNum',
                   style: TextStyle(
+                    fontSize: 12,
                     color: selected ? Colors.white : context.appOnSurface,
                     fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -477,29 +550,73 @@ class _NotificationScreenState extends State<NotificationScreen> {
             const Text(
               'Effacer toutes les notifications ?',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text('Cette action est irréversible.', style: TextStyle(color: context.appMuted)),
+            Text('Cette action est irréversible.', style: TextStyle(fontSize: 13, color: context.appMuted)),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annuler'),
+          ),
           FilledButton(
             onPressed: controller.clearingAll
                 ? null
                 : () async {
-                    await controller.clearAll();
-                    if (ctx.mounted) Navigator.pop(ctx);
-                    if (mounted) setState(() => _page = 1);
-                  },
+              await controller.clearAll();
+              if (ctx.mounted) Navigator.pop(ctx);
+              if (mounted) setState(() => _page = 1);
+            },
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             child: controller.clearingAll
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            )
                 : const Text('Effacer'),
           ),
         ],
       ),
     );
+  }
+
+  IconData _notifIcon(String type) {
+    if (type.contains('reclamation')) return Icons.description_outlined;
+    if (type.contains('status')) return Icons.swap_horiz;
+    if (type.contains('meeting')) return Icons.event_available_outlined;
+    if (type.contains('escalat')) return Icons.arrow_circle_up_outlined;
+    if (type.contains('resolved')) return Icons.check_circle_outline;
+    if (type.contains('rejected')) return Icons.cancel_outlined;
+    if (type.contains('document')) return Icons.attach_file;
+    if (type.contains('note')) return Icons.sticky_note_2_outlined;
+    if (type.contains('system') || type.contains('general')) return Icons.info_outline;
+    return Icons.notifications_outlined;
+  }
+
+  Color _notifColor(BuildContext context, String type) {
+    if (type.contains('resolved')) return Colors.green;
+    if (type.contains('rejected')) return Colors.red;
+    if (type.contains('escalat')) return Colors.deepOrange;
+    if (type.contains('meeting')) return Colors.purple;
+    if (type.contains('reclamation')) return Theme.of(context).colorScheme.primary;
+    if (type.contains('document')) return Colors.teal;
+    if (type.contains('note')) return Colors.amber;
+    if (type.contains('system') || type.contains('general')) return Colors.blueGrey;
+    return Colors.blueGrey;
+  }
+
+  String _notifTypeLabel(String type) {
+    if (type.contains('reclamation')) return 'Réclamation';
+    if (type.contains('meeting')) return 'RDV';
+    if (type.contains('document')) return 'Document';
+    if (type.contains('system')) return 'Système';
+    if (type.contains('resolved')) return 'Résolu';
+    if (type.contains('rejected')) return 'Refusé';
+    if (type.contains('escalat')) return 'Escalade';
+    if (type.contains('note')) return 'Note';
+    return 'Info';
   }
 }

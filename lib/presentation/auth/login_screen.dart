@@ -55,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
                             Center(
                               child: Text(
                                 'ISCAE Réclamations',
-                                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
                               ),
                             ),
                             const SizedBox(height: 28),
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
                           Text(
                             '© ${DateTime.now().year} ISCAE — Tous droits réservés',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -104,9 +104,9 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           child: Icon(icon, color: Colors.white, size: 28),
         ),
         const SizedBox(height: 16),
-        Text(title, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AuthColors.title)),
+        Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AuthColors.title)),
         const SizedBox(height: 6),
-        Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: AuthColors.muted)),
+        Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AuthColors.muted)),
       ],
     );
   }
@@ -173,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             crossAxisAlignment: WrapCrossAlignment.center,
             alignment: WrapAlignment.center,
             children: [
-              const Text('Pas encore de compte ? ', style: TextStyle(color: AuthColors.muted, fontSize: 14)),
+              const Text('Pas encore de compte ? ', style: TextStyle(color: AuthColors.muted, fontSize: 13)),
               TextButton(
                 onPressed: _loading ? null : () => Navigator.pushNamed(context, '/register'),
                 child: const Text('Créer mon compte', style: TextStyle(fontWeight: FontWeight.w700, color: AuthColors.primary)),
@@ -227,19 +227,19 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
         Center(
           child: resendCooldown > 0
               ? Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AuthColors.formBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AuthColors.fieldBorder),
-                  ),
-                  child: Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 13, color: AuthColors.muted)),
-                )
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: AuthColors.formBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AuthColors.fieldBorder),
+            ),
+            child: Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 12, color: AuthColors.muted)),
+          )
               : TextButton.icon(
-                  onPressed: _loading ? null : _handleResendOtp,
-                  icon: const Icon(Icons.refresh, size: 16),
-                  label: const Text('Renvoyer le code'),
-                ),
+            onPressed: _loading ? null : _handleResendOtp,
+            icon: const Icon(Icons.refresh, size: 16),
+            label: const Text('Renvoyer le code'),
+          ),
         ),
         if (_errorMsg.isNotEmpty) ...[
           const SizedBox(height: 16),
@@ -257,10 +257,10 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           onPressed: _loading
               ? null
               : () => setState(() {
-                    _step = _LoginStep.login;
-                    _errorMsg = '';
-                    _otpKey.currentState?.clear();
-                  }),
+            _step = _LoginStep.login;
+            _errorMsg = '';
+            _otpKey.currentState?.clear();
+          }),
           icon: const Icon(Icons.arrow_back, size: 16),
           label: const Text('Retour à la connexion', style: TextStyle(color: AuthColors.muted)),
         ),

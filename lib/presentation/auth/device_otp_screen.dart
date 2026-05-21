@@ -26,11 +26,10 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // استدعاء دالة التحقق verifyDeviceOtp مع تمرير الـ deviceFingerprint المطلوبة إجبارياً
       final dynamic result = await ApiConfig().authService.verifyDeviceOtp(
         userId: widget.userId,
         otpCode: _otpController.text.trim(),
-        deviceFingerprint: "flutter_app_device_fingerprint_xyz", // نفس البصمة المستخدمة في شاشة الدخول
+        deviceFingerprint: "flutter_app_device_fingerprint_xyz",
       );
 
       setState(() => _isLoading = false);
@@ -38,7 +37,6 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
       if (result != null) {
         if (!mounted) return;
 
-        // حماية الواجهة في حال رجوع رسالة نصية مباشرة عند الخطأ
         if (result is String) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(result), backgroundColor: Colors.red),
@@ -46,16 +44,14 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
           return;
         }
 
-        // المعالجة الآمنة في حال رجوع مصفوفة Map (الرد القياسي من لارافيل)
         if (result is Map) {
           if (result['success'] == true || result['token'] != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تم توثيق الجهاز والدخول بنجاح!'), backgroundColor: Colors.green),
+              const SnackBar(content: Text('Lappareil a été documenté avec succès et la connexion a été établie avec succès.'), backgroundColor: Colors.green),
             );
-            // الانتقال إلى الشاشة الرئيسية للتطبيق (Dashboard) وتصفير مكدس الشاشات
             Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
           } else {
-            String errMsg = result['message'] ?? 'كود التحقق غير صحيح أو منتهي الصلاحية';
+            String errMsg = result['message'] ?? 'Le code de vérification est incorrect ou a expiré.';
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(errMsg), backgroundColor: Colors.red),
             );
@@ -64,14 +60,14 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('السيرفر لم يرسل استجابة، تحقق من الاتصال'), backgroundColor: Colors.red),
+          const SnackBar(content: Text('Le serveur na pas répondu ; veuillez vérifier votre connexion.'), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('خطأ أثناء التحقق: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text('Erreur lors de la vérification: $e'), backgroundColor: Colors.red),
       );
     }
   }
@@ -80,7 +76,7 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('توثيق الجهاز'),
+        title: const Text('Documentation de l appareil', style: TextStyle(fontSize: 15)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
@@ -97,43 +93,39 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.phonelink_lock, size: 80, color: Colors.blueGrey),
+                const Icon(Icons.phonelink_lock, size: 72, color: Colors.blueGrey),
                 const SizedBox(height: 24),
                 const Text(
-                  'تم رصد تسجيل دخول من جهاز جديد',
+                  'Une connexion depuis un nouvel appareil a été détectée.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'تم إرسال كود التحقق (OTP) إلى بريدك الإلكتروني المعتمد:\n${widget.maskedEmail}',
+                  'Un code de vérification (OTP) a été envoyé à votre adresse électronique enregistrée:\n${widget.maskedEmail}',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  style: const TextStyle(fontSize: 13, color: Colors.grey),
                 ),
                 const SizedBox(height: 32),
-
-                // حقل كود الـ OTP
                 TextFormField(
                   controller: _otpController,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 24, letterSpacing: 8, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold),
                   decoration: const InputDecoration(
-                    labelText: 'أدخل رمز التحقق (6 أرقام)',
+                    labelText: 'Saisissez le code de vérification (6 chiffres)',
                     alignLabelWithHint: true,
                     border: OutlineInputBorder(),
                     counterText: "",
                   ),
                   maxLength: 6,
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'الرجاء إدخال الرمز';
-                    if (value.length < 6) return 'يجب إدخال 6 أرقام كاملة';
+                    if (value == null || value.isEmpty) return 'Veuillez saisir le code';
+                    if (value.length < 6) return 'Vous devez saisir 6 chiffres complets.';
                     return null;
                   },
                 ),
                 const SizedBox(height: 24),
-
-                // زر التأكيد
                 ElevatedButton(
                   onPressed: _isLoading ? null : _verifyOtp,
                   style: ElevatedButton.styleFrom(
@@ -147,7 +139,7 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
                     width: 20,
                     child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                   )
-                      : const Text('تأكيد الجهاز ودخول', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      : const Text('Confirmation et connexion à lappareil', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
                 ),
               ],
             ),

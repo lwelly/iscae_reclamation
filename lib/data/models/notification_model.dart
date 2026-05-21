@@ -33,16 +33,29 @@ class NotificationModel {
         json['is_read'] == 1 ||
         json['is_read'] == '1';
 
+    String? pickString(List<String> keys) {
+      for (final key in keys) {
+        final v = json[key] ?? data?[key];
+        if (v != null && v.toString().trim().isNotEmpty) return v.toString().trim();
+      }
+      return null;
+    }
+
+    final title = pickString(['title']) ?? 'Notification';
+    final body = pickString(['message', 'body', 'content', 'description', 'text']) ?? '';
+
+    final reclamationId = pickString(['reclamation_id']);
+
     return NotificationModel(
       id: json['id']?.toString() ?? '',
       type: json['type']?.toString(),
-      title: json['title']?.toString() ?? data?['title']?.toString() ?? 'Notification',
-      body: json['message']?.toString() ?? json['body']?.toString() ?? data?['message']?.toString() ?? '',
+      title: title,
+      body: body,
       isRead: isRead,
       readAt: readAt,
       channel: json['channel']?.toString(),
       data: data,
-      reclamationId: json['reclamation_id']?.toString() ?? data?['reclamation_id']?.toString(),
+      reclamationId: reclamationId,
       sentAt: json['sent_at']?.toString(),
       createdAt: json['created_at']?.toString(),
     );
