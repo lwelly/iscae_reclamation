@@ -4,6 +4,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_config.dart';
 import 'widgets/auth_shared.dart';
 
+// Définition locale de la charte graphique ISCAE
+class IscaeColors {
+  static const Color green = Color(0xFF0B8243);      // Vert texte/flèche
+  static const Color cyanDark = Color(0xFF4A7479);   // Bleu-gris de la sphère
+  static const Color cyanLight = Color(0xFF79C2C4);  // Bleu-cyan clair de la sphère
+  static const Color white = Color(0xFFFFFFFF);
+
+  // Dégradé officiel pour l'arrière-plan de l'application
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [cyanDark, cyanLight],
+  );
+}
+
+enum _LoginStep { login, deviceOtp }
+
 class RegisterFlowScreen extends StatefulWidget {
   const RegisterFlowScreen({super.key});
 
@@ -51,11 +68,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A237E), Color(0xFF283593), Color(0xFF3949AB)],
-          ),
+          gradient: IscaeColors.brandGradient, // Remplacement par le dégradé officiel de la sphère
         ),
         child: SafeArea(
           child: Center(
@@ -65,7 +78,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Column(
                   children: [
-                    AuthLogoCircle(size: 72, imageSize: 64),
+                    const AuthLogoCircle(size: 72, imageSize: 64),
                     const SizedBox(height: 12),
                     const Text('ISCAE', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                     Text(
@@ -104,7 +117,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                                   Text('Déjà un compte ? ', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                   TextButton(
                                     onPressed: _loading ? null : () => Navigator.pushReplacementNamed(context, '/login'),
-                                    child: const Text('Se connecter', style: TextStyle(fontWeight: FontWeight.w600, color: AuthColors.primary)),
+                                    child: const Text('Se connecter', style: TextStyle(fontWeight: FontWeight.w600, color: IscaeColors.green)), // Changé en Vert ISCAE
                                   ),
                                 ],
                               ),
@@ -156,9 +169,9 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                 color: done
                     ? const Color(0xFF4CAF50)
                     : active
-                    ? const Color(0xFF1A237E)
+                    ? IscaeColors.green // Étape active en Vert ISCAE au lieu du bleu foncé
                     : const Color(0xFFE0E0E0),
-                boxShadow: active ? [BoxShadow(color: const Color(0xFF1A237E).withValues(alpha: 0.45), blurRadius: 10)] : null,
+                boxShadow: active ? [BoxShadow(color: IscaeColors.green.withValues(alpha: 0.45), blurRadius: 10)] : null,
               ),
               child: Center(
                 child: done
@@ -181,7 +194,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                 color: done
                     ? const Color(0xFF4CAF50)
                     : active
-                    ? const Color(0xFF1A237E)
+                    ? IscaeColors.green // Texte de l'étape active en Vert ISCAE
                     : const Color(0xFF757575),
               ),
             ),
@@ -238,11 +251,18 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
           style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 24),
-        AuthPrimaryButton(
-          label: 'Vérifier mon identité',
-          icon: Icons.verified_user_outlined,
-          loading: _loading,
-          onPressed: _handleVerifyIdentity,
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Vérifier mon identité',
+            icon: Icons.verified_user_outlined,
+            loading: _loading,
+            onPressed: _handleVerifyIdentity,
+          ),
         ),
       ],
     );
@@ -272,12 +292,12 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AuthColors.primary.withValues(alpha: 0.08),
+            color: IscaeColors.green.withValues(alpha: 0.08), // Devient un fond vert translucide soft
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
-              const Icon(Icons.school_outlined, color: AuthColors.primary),
+              const Icon(Icons.school_outlined, color: IscaeColors.green), // Icône en vert
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -296,11 +316,18 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         const AuthFieldLabel('Code à 6 chiffres'),
         OtpInputRow(key: _otpKey, enabled: !_loading, onChanged: (_) => setState(() => _errorMsg = '')),
         const SizedBox(height: 16),
-        AuthPrimaryButton(
-          label: 'Vérifier le code',
-          icon: Icons.shield_outlined,
-          loading: _loading,
-          onPressed: _handleVerifyOtp,
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Vérifier le code',
+            icon: Icons.shield_outlined,
+            loading: _loading,
+            onPressed: _handleVerifyOtp,
+          ),
         ),
         const SizedBox(height: 12),
         Center(
@@ -308,7 +335,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
             onPressed: (resendCooldown > 0 || _loading) ? null : _handleResendOtp,
             child: Text(
               resendCooldown > 0 ? 'Renvoyer dans ${resendCooldown}s' : 'Renvoyer le code',
-              style: const TextStyle(color: AuthColors.primary, fontSize: 13),
+              style: const TextStyle(color: IscaeColors.green, fontSize: 13), // Lien en Vert ISCAE
             ),
           ),
         ),
@@ -353,12 +380,18 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
             child: Text('Les mots de passe ne correspondent pas.', style: TextStyle(fontSize: 11, color: Colors.red.shade700)),
           ),
         const SizedBox(height: 24),
-        AuthPrimaryButton(
-          label: 'Créer mon compte',
-          icon: Icons.check_circle_outline,
-          loading: _loading,
-          onPressed: _handleSetPassword,
-          gradient: const [Color(0xFF2E7D32), Color(0xFF43A047)],
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Créer mon compte',
+            icon: Icons.check_circle_outline,
+            loading: _loading,
+            onPressed: _handleSetPassword,
+          ),
         ),
       ],
     );
@@ -458,7 +491,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         email: _emailController.text.trim().toLowerCase(),
       );
     } catch (_) {
-      // Comme Vue : passer à l'étape 2 même si send échoue silencieusement côté UI
+      // Échec silencieux côté UI
     }
     if (!mounted) return;
     setState(() {

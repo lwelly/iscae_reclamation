@@ -3,6 +3,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/config/api_config.dart';
 import 'widgets/auth_shared.dart';
 
+// Définition locale des couleurs officielles du logo ISCAE
+class IscaeColors {
+  static const Color green = Color(0xFF0B8243);      // Vert texte/flèche
+  static const Color cyanDark = Color(0xFF0B8243);   // Bleu-gris de la sphère
+  static const Color cyanLight = Color(0xFF79C2C4);  // Bleu-cyan clair de la sphère
+  static const Color white = Color(0xFFFFFFFF);
+
+  // Dégradé inspiré de la sphère pour les arrière-plans mobiles
+  static const LinearGradient brandGradient = LinearGradient(
+    colors: [cyanDark, cyanLight],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+}
+
 enum _LoginStep { login, deviceOtp }
 
 class LoginScreen extends StatefulWidget {
@@ -37,7 +52,8 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             flex: wide ? 7 : 1,
             child: Container(
               decoration: BoxDecoration(
-                gradient: wide ? null : AuthColors.brandGradient,
+                // Application du dégradé ISCAE sur mobile
+                gradient: wide ? null : IscaeColors.brandGradient,
                 color: wide ? Theme.of(context).scaffoldBackgroundColor : null,
               ),
               child: SafeArea(
@@ -55,7 +71,11 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
                             Center(
                               child: Text(
                                 'ISCAE Réclamations',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: IscaeColors.green, // Vert ISCAE pour le titre
+                                ),
                               ),
                             ),
                             const SizedBox(height: 28),
@@ -88,14 +108,15 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           height: 64,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
+            // Utilisation des tons de la sphère ISCAE (Cyan Light & Dark) pour l'icône
             gradient: LinearGradient(
               colors: warning
                   ? const [Color(0xFFE65100), Color(0xFFFF9800)]
-                  : const [Color(0xFF1A237E), Color(0xFF3949AB)],
+                  : const [IscaeColors.cyanDark, IscaeColors.cyanLight],
             ),
             boxShadow: [
               BoxShadow(
-                color: (warning ? const Color(0xFFE65100) : const Color(0xFF1A237E)).withValues(alpha: 0.35),
+                color: (warning ? const Color(0xFFE65100) : IscaeColors.cyanDark).withValues(alpha: 0.35),
                 blurRadius: 24,
                 offset: const Offset(0, 8),
               ),
@@ -146,18 +167,29 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           alignment: Alignment.centerRight,
           child: TextButton.icon(
             onPressed: _loading ? null : () => Navigator.pushNamed(context, '/forgot-password'),
-            icon: const Icon(Icons.help_outline, size: 14),
-            label: const Text('Mot de passe oublié ?', style: TextStyle(fontWeight: FontWeight.w600, color: AuthColors.primary)),
+            icon: const Icon(Icons.help_outline, size: 14, color: IscaeColors.green),
+            label: const Text(
+              'Mot de passe oublié ?',
+              style: TextStyle(fontWeight: FontWeight.w600, color: IscaeColors.green), // Changé en vert
+            ),
           ),
         ),
         if (_errorMsg.isNotEmpty) ...[
           AuthErrorBanner(message: _errorMsg, onClose: () => setState(() => _errorMsg = '')),
         ],
-        AuthPrimaryButton(
-          label: 'Se connecter',
-          icon: Icons.login,
-          loading: _loading,
-          onPressed: _handleLogin,
+        // Changement de la couleur du bouton principal (généralement géré par le widget ou via Theme, mais on s'assure de la cohérence ici)
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Se connecter',
+            icon: Icons.login,
+            loading: _loading,
+            onPressed: _handleLogin,
+          ),
         ),
         const SizedBox(height: 20),
         Row(
@@ -176,7 +208,10 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
               const Text('Pas encore de compte ? ', style: TextStyle(color: AuthColors.muted, fontSize: 13)),
               TextButton(
                 onPressed: _loading ? null : () => Navigator.pushNamed(context, '/register'),
-                child: const Text('Créer mon compte', style: TextStyle(fontWeight: FontWeight.w700, color: AuthColors.primary)),
+                child: const Text(
+                  'Créer mon compte',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: IscaeColors.green), // Changé en vert
+                ),
               ),
             ],
           ),
@@ -237,8 +272,8 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           )
               : TextButton.icon(
             onPressed: _loading ? null : _handleResendOtp,
-            icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Renvoyer le code'),
+            icon: const Icon(Icons.refresh, size: 16, color: IscaeColors.green),
+            label: const Text('Renvoyer le code', style: TextStyle(color: IscaeColors.green)),
           ),
         ),
         if (_errorMsg.isNotEmpty) ...[
@@ -246,11 +281,18 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           AuthErrorBanner(message: _errorMsg, onClose: () => setState(() => _errorMsg = '')),
         ],
         const SizedBox(height: 20),
-        AuthPrimaryButton(
-          label: 'Vérifier et continuer',
-          icon: Icons.verified_user_outlined,
-          loading: _loading,
-          onPressed: _handleVerifyDeviceOtp,
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Vérifier et continuer',
+            icon: Icons.verified_user_outlined,
+            loading: _loading,
+            onPressed: _handleVerifyDeviceOtp,
+          ),
         ),
         const SizedBox(height: 12),
         TextButton.icon(
@@ -261,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             _errorMsg = '';
             _otpKey.currentState?.clear();
           }),
-          icon: const Icon(Icons.arrow_back, size: 16),
+          icon: const Icon(Icons.arrow_back, size: 16, color: AuthColors.muted),
           label: const Text('Retour à la connexion', style: TextStyle(color: AuthColors.muted)),
         ),
       ],

@@ -2,6 +2,20 @@ import 'package:flutter/material.dart';
 import '../../core/config/api_config.dart';
 import 'widgets/auth_shared.dart';
 
+// Définition locale de la charte graphique ISCAE
+class IscaeColors {
+  static const Color green = Color(0xFF0B8243);      // Vert texte/flèche
+  static const Color cyanDark = Color(0xFF4A7479);   // Bleu-gris de la sphère
+  static const Color cyanLight = Color(0xFF79C2C4);  // Bleu-cyan clair de la sphère
+  static const Color white = Color(0xFFFFFFFF);
+
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [cyanDark, cyanLight],
+  );
+}
+
 class ForgotPasswordFlow extends StatefulWidget {
   const ForgotPasswordFlow({super.key});
 
@@ -35,7 +49,8 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
   }
 
   Color get _stepColor {
-    const colors = [Color(0xFF6366F1), Color(0xFFF59E0B), Color(0xFF10B981), Color(0xFF10B981)];
+    // Remplacement de l'indigo de l'étape 1 par le vert ISCAE
+    const colors = [IscaeColors.green, Color(0xFF10B981), Color(0xFF10B981), Color(0xFF10B981)];
     if (_step <= 0 || _step > colors.length) return colors[0];
     return colors[_step - 1];
   }
@@ -113,8 +128,8 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                             Center(
                               child: TextButton.icon(
                                 onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
-                                icon: const Icon(Icons.arrow_back, size: 14),
-                                label: const Text('Retour à la connexion', style: TextStyle(color: Color(0xFF6366F1), fontSize: 13)),
+                                icon: const Icon(Icons.arrow_back, size: 14, color: IscaeColors.green),
+                                label: const Text('Retour à la connexion', style: TextStyle(color: IscaeColors.green, fontSize: 13)),
                               ),
                             ),
                           ],
@@ -168,8 +183,9 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
                     height: 28,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: done || current ? (done ? const Color(0xFF4338CA) : const Color(0xFF6366F1)) : const Color(0xFFE2E8F0),
-                      boxShadow: current ? [BoxShadow(color: const Color(0xFF6366F1).withValues(alpha: 0.2), spreadRadius: 2)] : null,
+                      // Remplacement des couleurs d'état Indigo par le Vert ISCAE
+                      color: done || current ? (done ? IscaeColors.cyanDark : IscaeColors.green) : const Color(0xFFE2E8F0),
+                      boxShadow: current ? [BoxShadow(color: IscaeColors.green.withValues(alpha: 0.2), spreadRadius: 2)] : null,
                     ),
                     child: Center(
                       child: done
@@ -237,8 +253,8 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
       children: [
         _buildStepHeader(
           icon: Icons.email_outlined,
-          iconColor: const Color(0xFF6366F1),
-          iconBg: const Color(0x1A6366F1),
+          iconColor: IscaeColors.green, // Vert ISCAE
+          iconBg: IscaeColors.green.withValues(alpha: 0.1),
           title: 'Mot de passe oublié ?',
           subtitle: 'Entrez l\'email associé à votre compte ISCAE',
         ),
@@ -261,12 +277,18 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           _buildAlert(),
         ],
         const SizedBox(height: 24),
-        AuthPrimaryButton(
-          label: 'Envoyer le code de vérification',
-          icon: Icons.send_outlined,
-          loading: _loading,
-          onPressed: _handleSendOtp,
-          gradient: const [Color(0xFF4338CA), Color(0xFF4338CA)],
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Envoyer le code de vérification',
+            icon: Icons.send_outlined,
+            loading: _loading,
+            onPressed: _handleSendOtp,
+          ),
         ),
       ],
     );
@@ -279,7 +301,7 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
       children: [
         _buildStepHeader(
           icon: Icons.vpn_key_outlined,
-          iconColor: const Color(0xFFF59E0B),
+          iconColor: const Color(0xFF10B981),
           iconBg: const Color(0x1AF59E0B),
           title: 'Code de vérification',
           subtitle: 'Code envoyé à $_maskedEmail',
@@ -293,11 +315,11 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           children: [
             Text('Valide 10 minutes', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
             if (resendCooldown > 0)
-              Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 11, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold))
+              Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 11, color: Color(0xFF10B981), fontWeight: FontWeight.bold))
             else
               TextButton(
                 onPressed: _loading ? null : _handleSendOtp,
-                child: const Text('Renvoyer', style: TextStyle(fontSize: 13)),
+                child: const Text('Renvoyer', style: TextStyle(fontSize: 13, color: IscaeColors.green)),
               ),
           ],
         ),
@@ -306,12 +328,18 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           _buildAlert(),
         ],
         const SizedBox(height: 20),
-        AuthPrimaryButton(
-          label: 'Vérifier le code',
-          icon: Icons.check_circle_outline,
-          loading: _loading,
-          onPressed: _handleVerifyOtp,
-          gradient: const [Color(0xFF4338CA), Color(0xFF4338CA)],
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Vérifier le code',
+            icon: Icons.check_circle_outline,
+            loading: _loading,
+            onPressed: _handleVerifyOtp,
+          ),
         ),
         TextButton.icon(
           onPressed: _loading
@@ -320,8 +348,8 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
             _step = 1;
             _errorMsg = '';
           }),
-          icon: const Icon(Icons.arrow_back, size: 14),
-          label: const Text('Changer l\'adresse email', style: TextStyle(fontSize: 13)),
+          icon: const Icon(Icons.arrow_back, size: 14, color: IscaeColors.cyanDark),
+          label: const Text('Changer l\'adresse email', style: TextStyle(fontSize: 13, color: IscaeColors.cyanDark)),
         ),
       ],
     );
@@ -336,8 +364,8 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
       children: [
         _buildStepHeader(
           icon: Icons.lock_reset,
-          iconColor: const Color(0xFF10B981),
-          iconBg: const Color(0x1A10B981),
+          iconColor: IscaeColors.green,
+          iconBg: IscaeColors.green.withValues(alpha: 0.1),
           title: 'Nouveau mot de passe',
           subtitle: 'Choisissez un mot de passe sécurisé',
         ),
@@ -424,12 +452,18 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           _buildAlert(),
         ],
         const SizedBox(height: 24),
-        AuthPrimaryButton(
-          label: 'Réinitialiser le mot de passe',
-          icon: Icons.lock_reset,
-          loading: _loading,
-          onPressed: canSubmit ? _handleResetPassword : null,
-          gradient: const [Color(0xFF4338CA), Color(0xFF4338CA)],
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Réinitialiser le mot de passe',
+            icon: Icons.lock_reset,
+            loading: _loading,
+            onPressed: canSubmit ? _handleResetPassword : null,
+          ),
         ),
       ],
     );
@@ -454,10 +488,17 @@ class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> with ResendCool
           style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
         ),
         const SizedBox(height: 28),
-        AuthPrimaryButton(
-          label: 'Se connecter',
-          icon: Icons.login,
-          onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+        Theme(
+          data: Theme.of(context).copyWith(
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+            ),
+          ),
+          child: AuthPrimaryButton(
+            label: 'Se connecter',
+            icon: Icons.login,
+            onPressed: () => Navigator.pushReplacementNamed(context, '/login'),
+          ),
         ),
       ],
     );

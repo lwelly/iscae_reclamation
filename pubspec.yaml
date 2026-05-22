@@ -13,6 +13,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # الأيقونات الافتراضية لنظام iOS ونظام Material
   cupertino_icons: ^1.0.8

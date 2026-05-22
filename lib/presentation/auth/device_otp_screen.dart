@@ -1,5 +1,20 @@
 import 'package:flutter/material.dart';
 import '../../core/config/api_config.dart';
+import 'widgets/auth_shared.dart';
+
+// Définition locale de la charte graphique ISCAE
+class IscaeColors {
+  static const Color green = Color(0xFF0B8243);      // Vert texte/flèche
+  static const Color cyanDark = Color(0xFF4A7479);   // Bleu-gris de la sphère
+  static const Color cyanLight = Color(0xFF79C2C4);  // Bleu-cyan clair de la sphère
+  static const Color white = Color(0xFFFFFFFF);
+
+  static const LinearGradient brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [cyanDark, cyanLight],
+  );
+}
 
 class DeviceOtpScreen extends StatefulWidget {
   final int userId;
@@ -16,19 +31,26 @@ class DeviceOtpScreen extends StatefulWidget {
 }
 
 class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _otpController = TextEditingController();
+  final _otpKey = GlobalKey<OtpInputRowState>();
   bool _isLoading = false;
+  String _errorMsg = '';
 
   void _verifyOtp() async {
-    if (!_formKey.currentState!.validate()) return;
+    final otpCode = _otpKey.currentState?.value ?? '';
+
+    setState(() => _errorMsg = '');
+
+    if (otpCode.length < 6) {
+      setState(() => _errorMsg = 'Veuillez saisir le code complet à 6 chiffres.');
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       final dynamic result = await ApiConfig().authService.verifyDeviceOtp(
         userId: widget.userId,
-        otpCode: _otpController.text.trim(),
+        otpCode: otpCode,
         deviceFingerprint: "flutter_app_device_fingerprint_xyz",
       );
 
@@ -38,120 +60,177 @@ class _DeviceOtpScreenState extends State<DeviceOtpScreen> {
         if (!mounted) return;
 
         if (result is String) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(result), backgroundColor: Colors.red),
-          );
+          setState(() => _errorMsg = result);
+          _otpKey.currentState?.clear();
           return;
         }
 
         if (result is Map) {
           if (result['success'] == true || result['token'] != null) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Lappareil a été documenté avec succès et la connexion a été établie avec succès.'), backgroundColor: Colors.green),
+              const SnackBar(
+                  content: Text('L\'appareil a été validé. Connexion établie avec succès.'),
+                  backgroundColor: Colors.green
+              ),
             );
             Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (route) => false);
           } else {
-            String errMsg = result['message'] ?? 'Le code de vérification est incorrect ou a expiré.';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(errMsg), backgroundColor: Colors.red),
-            );
+            setState(() => _errorMsg = result['message'] ?? 'Le code de vérification est incorrect ou a expiré.');
+            _otpKey.currentState?.clear();
           }
         }
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Le serveur na pas répondu ; veuillez vérifier votre connexion.'), backgroundColor: Colors.red),
-        );
+        setState(() => _errorMsg = 'Le serveur n\'a pas répondu ; veuillez vérifier votre connexion.');
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la vérification: $e'), backgroundColor: Colors.red),
-      );
+      setState(() {
+        _isLoading = false;
+        _errorMsg = 'Erreur lors de la vérification: $e';
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Documentation de l appareil', style: TextStyle(fontSize: 15)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.blueGrey),
-          onPressed: () => Navigator.pop(context),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: IscaeColors.brandGradient,
         ),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(Icons.phonelink_lock, size: 72, color: Colors.blueGrey),
-                const SizedBox(height: 24),
-                const Text(
-                  'Une connexion depuis un nouvel appareil a été détectée.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blueGrey),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 490),
+                child: Column(
+                  children: [
+                    const AuthLogoCircle(size: 72, imageSize: 64),
+                    const SizedBox(height: 12),
+                    const Text(
+                        'ISCAE',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)
+                    ),
+                    Text(
+                      'Sécurisation de l\'accès',
+                      style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8)),
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                              color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.15),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8)
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                    color: IscaeColors.green.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(14)
+                                ),
+                                child: const Icon(Icons.phonelink_lock, color: IscaeColors.green, size: 24),
+                              ),
+                              const SizedBox(width: 14),
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                        'Nouvel appareil détecté',
+                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                        'Veuillez valider votre identité pour continuer.',
+                                        style: TextStyle(fontSize: 12, color: AuthColors.muted)
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Un code OTP de sécurité a été envoyé à l\'adresse : \n',
+                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+                              children: [
+                                TextSpan(
+                                    text: widget.maskedEmail,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)
+                                )
+                              ],
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          const AuthFieldLabel('Code de vérification (6 chiffres)'),
+                          OtpInputRow(
+                              key: _otpKey,
+                              enabled: !_isLoading,
+                              onChanged: (_) => setState(() => _errorMsg = '')
+                          ),
+                          if (_errorMsg.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            AuthErrorBanner(message: _errorMsg, onClose: () => setState(() => _errorMsg = '')),
+                          ],
+                          const SizedBox(height: 24),
+                          Theme(
+                            data: Theme.of(context).copyWith(
+                              elevatedButtonTheme: ElevatedButtonThemeData(
+                                style: ElevatedButton.styleFrom(backgroundColor: IscaeColors.green),
+                              ),
+                            ),
+                            child: AuthPrimaryButton(
+                              label: 'Confirmer l\'appareil',
+                              icon: Icons.check_circle_outline,
+                              loading: _isLoading,
+                              onPressed: _verifyOtp,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Center(
+                            child: TextButton.icon(
+                              onPressed: _isLoading ? null : () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back, size: 14, color: IscaeColors.cyanDark),
+                              label: const Text(
+                                  'Retour',
+                                  style: TextStyle(color: IscaeColors.cyanDark, fontSize: 13, fontWeight: FontWeight.w600)
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '© ${DateTime.now().year} ISCAE — Tous droits réservés',
+                      style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6)),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  'Un code de vérification (OTP) a été envoyé à votre adresse électronique enregistrée:\n${widget.maskedEmail}',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13, color: Colors.grey),
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 22, letterSpacing: 8, fontWeight: FontWeight.bold),
-                  decoration: const InputDecoration(
-                    labelText: 'Saisissez le code de vérification (6 chiffres)',
-                    alignLabelWithHint: true,
-                    border: OutlineInputBorder(),
-                    counterText: "",
-                  ),
-                  maxLength: 6,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return 'Veuillez saisir le code';
-                    if (value.length < 6) return 'Vous devez saisir 6 chiffres complets.';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _verifyOtp,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    backgroundColor: Colors.blueGrey,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                      : const Text('Confirmation et connexion à lappareil', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _otpController.dispose();
-    super.dispose();
   }
 }
