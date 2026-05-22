@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // Configurations & Services
+import 'core/config/api_base_url.dart';
 import 'core/config/api_config.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
@@ -30,6 +31,8 @@ void main() async {
   // Récupérer le token stocké (si disponible) au démarrage
   final prefs = await SharedPreferences.getInstance();
   final authToken = prefs.getString('auth_token');
+
+  await ApiBaseUrl.load();
 
   // Initialiser l'API avec le token récupéré
   ApiConfig().initialize(authToken: authToken);

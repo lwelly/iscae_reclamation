@@ -13,8 +13,13 @@ String formatApiError(Object error) {
         return 'Délai dépassé : le serveur ne répond pas.\n'
             'Vérifiez que Laravel tourne (php artisan serve) et l\'URL :\n$base';
       case DioExceptionType.connectionError:
-        return 'Connexion impossible au serveur.\n'
-            'Vérifiez le Wi‑Fi et que l\'API est accessible :\n$base';
+        return 'Connexion impossible au serveur.\n\n'
+            '• Wi‑Fi maison : PC et téléphone sur le même réseau.\n'
+            '• Point d\'accès mobile : sur l\'écran de connexion, '
+            '« Configurer le serveur » avec l\'IP du PC sur ce réseau '
+            '(ipconfig → IPv4, ex. 192.168.43.x).\n'
+            '• Laravel : php artisan serve --host=0.0.0.0 --port=8000\n\n'
+            'URL actuelle :\n$base';
       case DioExceptionType.badResponse:
         return extractApiMessage(
           error.response?.data,

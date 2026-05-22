@@ -65,59 +65,75 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
 
   @override
   Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 960;
+
     return Scaffold(
+      // Bloque le redimensionnement automatique pour éviter les sauts de layout et overflows
+      resizeToAvoidBottomInset: false,
       body: Container(
         decoration: const BoxDecoration(
-          gradient: IscaeColors.brandGradient, // Remplacement par le dégradé officiel de la sphère
+          gradient: IscaeColors.brandGradient,
         ),
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: Padding(
+              // Marges dynamiques réduites sur mobile pour économiser du layout vertical
+              padding: EdgeInsets.symmetric(horizontal: wide ? 20 : 16, vertical: wide ? 24 : 12),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 520),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min, // Contraint la hauteur au strict nécessaire
                   children: [
-                    const AuthLogoCircle(size: 72, imageSize: 64),
-                    const SizedBox(height: 12),
-                    const Text('ISCAE', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                    AuthLogoCircle(size: wide ? 72 : 60, imageSize: wide ? 64 : 52),
+                    SizedBox(height: wide ? 12 : 6),
+                    Text('ISCAE', style: TextStyle(fontSize: wide ? 22 : 19, fontWeight: FontWeight.bold, color: Colors.white)),
                     Text(
                       'Création de votre compte étudiant',
-                      style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.8)),
+                      style: TextStyle(fontSize: wide ? 13 : 12, color: Colors.white.withValues(alpha: 0.8)),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: wide ? 24 : 14),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(wide ? 24 : 16),
                       decoration: BoxDecoration(
                         color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.15), blurRadius: 24, offset: const Offset(0, 8)),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.15),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
                         ],
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (_step < 4) _buildStepper(),
-                          if (_step < 4) const SizedBox(height: 24),
+                          if (_step < 4) _buildStepper(wide),
+                          if (_step < 4) SizedBox(height: wide ? 24 : 14),
                           if (_errorMsg.isNotEmpty && _step < 4) ...[
                             AuthErrorBanner(message: _errorMsg, onClose: () => setState(() => _errorMsg = '')),
+                            const SizedBox(height: 10),
                           ],
                           AnimatedSwitcher(
                             duration: const Duration(milliseconds: 280),
-                            child: _buildStepContent(),
+                            child: _buildStepContent(wide),
                           ),
                           if (_step < 4) ...[
-                            const SizedBox(height: 20),
+                            SizedBox(height: wide ? 20 : 12),
                             Center(
                               child: Wrap(
                                 crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
-                                  Text('Déjà un compte ? ', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                  Text('Déjà un compte ? ', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                                   TextButton(
+                                    style: TextButton.styleFrom(
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
                                     onPressed: _loading ? null : () => Navigator.pushReplacementNamed(context, '/login'),
-                                    child: const Text('Se connecter', style: TextStyle(fontWeight: FontWeight.w600, color: IscaeColors.green)), // Changé en Vert ISCAE
+                                    child: const Text('Se connecter', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: IscaeColors.green)),
                                   ),
                                 ],
                               ),
@@ -126,7 +142,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: wide ? 16 : 10),
                     Text(
                       '© ${DateTime.now().year} ISCAE — Tous droits réservés',
                       style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.6)),
@@ -141,7 +157,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
     );
   }
 
-  Widget _buildStepper() {
+  Widget _buildStepper(bool wide) {
     return Row(
       children: List.generate(_steps.length * 2 - 1, (i) {
         if (i.isOdd) {
@@ -150,7 +166,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
           return Expanded(
             child: Container(
               height: 2,
-              margin: const EdgeInsets.only(bottom: 18),
+              margin: EdgeInsets.only(bottom: wide ? 18 : 14),
               color: done ? const Color(0xFF4CAF50) : const Color(0xFFE0E0E0),
             ),
           );
@@ -162,23 +178,24 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         return Column(
           children: [
             Container(
-              width: 32,
-              height: 32,
+              width: wide ? 32 : 26,
+              height: wide ? 32 : 26,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: done
                     ? const Color(0xFF4CAF50)
                     : active
-                    ? IscaeColors.green // Étape active en Vert ISCAE au lieu du bleu foncé
+                    ? IscaeColors.green
                     : const Color(0xFFE0E0E0),
                 boxShadow: active ? [BoxShadow(color: IscaeColors.green.withValues(alpha: 0.45), blurRadius: 10)] : null,
               ),
               child: Center(
                 child: done
-                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                    ? Icon(Icons.check, color: Colors.white, size: wide ? 16 : 13)
                     : Text(
                   '$stepNum',
                   style: TextStyle(
+                    fontSize: wide ? 14 : 12,
                     fontWeight: FontWeight.bold,
                     color: active ? Colors.white : const Color(0xFF757575),
                   ),
@@ -189,12 +206,12 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
             Text(
               _steps[stepIndex],
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: active || done ? FontWeight.w600 : FontWeight.normal,
                 color: done
                     ? const Color(0xFF4CAF50)
                     : active
-                    ? IscaeColors.green // Texte de l'étape active en Vert ISCAE
+                    ? IscaeColors.green
                     : const Color(0xFF757575),
               ),
             ),
@@ -204,31 +221,31 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
     );
   }
 
-  Widget _buildStepContent() {
+  Widget _buildStepContent(bool wide) {
     switch (_step) {
       case 1:
-        return _buildStep1(key: const ValueKey(1));
+        return _buildStep1(wide: wide, key: const ValueKey(1));
       case 2:
-        return _buildStep2(key: const ValueKey(2));
+        return _buildStep2(wide: wide, key: const ValueKey(2));
       case 3:
-        return _buildStep3(key: const ValueKey(3));
+        return _buildStep3(wide: wide, key: const ValueKey(3));
       default:
         return _buildSuccess(key: const ValueKey(4));
     }
   }
 
-  Widget _buildStep1({Key? key}) {
+  Widget _buildStep1({required bool wide, Key? key}) {
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Vérification de votre identité', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        Text('Vérification de votre identité', style: TextStyle(fontSize: wide ? 15 : 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
         Text(
-          'Saisissez votre matricule et votre email personnel (Gmail, Hotmail, etc.) tels qu\'enregistrés par l\'administration.',
-          style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.5),
+          'Saisissez votre matricule et votre email personnel tels qu\'enregistrés par l\'administration.',
+          style: TextStyle(fontSize: wide ? 13 : 12, color: Colors.grey.shade600, height: 1.4),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: wide ? 20 : 12),
         const AuthFieldLabel('Matricule *'),
         AuthTextField(
           controller: _matriculeController,
@@ -236,7 +253,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
           prefixIcon: Icons.badge_outlined,
           enabled: !_loading,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: wide ? 16 : 10),
         const AuthFieldLabel('Email personnel *'),
         AuthTextField(
           controller: _emailController,
@@ -245,12 +262,12 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
           keyboardType: TextInputType.emailAddress,
           enabled: !_loading,
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
           'Saisissez votre adresse email personnelle (Gmail, Hotmail, etc.)',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: wide ? 24 : 16),
         Theme(
           data: Theme.of(context).copyWith(
             elevatedButtonTheme: ElevatedButtonThemeData(
@@ -268,7 +285,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
     );
   }
 
-  Widget _buildStep2({Key? key}) {
+  Widget _buildStep2({required bool wide, Key? key}) {
     final filiereNiveau = [
       if (_studentFiliere.isNotEmpty) _studentFiliere,
       if (_studentFiliere.isNotEmpty && _studentNiveau.isNotEmpty) ' — ',
@@ -279,31 +296,31 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Vérification par email', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
+        Text('Vérification par email', style: TextStyle(fontSize: wide ? 15 : 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
         Text.rich(
           TextSpan(
             text: 'Un code à 6 chiffres a été envoyé à ',
-            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+            style: TextStyle(fontSize: wide ? 13 : 12, color: Colors.grey.shade600),
             children: [TextSpan(text: _maskedEmail, style: const TextStyle(fontWeight: FontWeight.bold))],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: wide ? 16 : 10),
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: IscaeColors.green.withValues(alpha: 0.08), // Devient un fond vert translucide soft
+            color: IscaeColors.green.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
-              const Icon(Icons.school_outlined, color: IscaeColors.green), // Icône en vert
-              const SizedBox(width: 12),
+              const Icon(Icons.school_outlined, color: IscaeColors.green, size: 20),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    Text(_studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                     if (filiereNiveau.isNotEmpty)
                       Text(filiereNiveau, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
                   ],
@@ -312,10 +329,10 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: wide ? 20 : 12),
         const AuthFieldLabel('Code à 6 chiffres'),
         OtpInputRow(key: _otpKey, enabled: !_loading, onChanged: (_) => setState(() => _errorMsg = '')),
-        const SizedBox(height: 16),
+        SizedBox(height: wide ? 16 : 10),
         Theme(
           data: Theme.of(context).copyWith(
             elevatedButtonTheme: ElevatedButtonThemeData(
@@ -329,13 +346,16 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
             onPressed: _handleVerifyOtp,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
         Center(
-          child: TextButton(
-            onPressed: (resendCooldown > 0 || _loading) ? null : _handleResendOtp,
-            child: Text(
-              resendCooldown > 0 ? 'Renvoyer dans ${resendCooldown}s' : 'Renvoyer le code',
-              style: const TextStyle(color: IscaeColors.green, fontSize: 13), // Lien en Vert ISCAE
+          child: SizedBox(
+            height: 32,
+            child: TextButton(
+              onPressed: (resendCooldown > 0 || _loading) ? null : _handleResendOtp,
+              child: Text(
+                resendCooldown > 0 ? 'Renvoyer dans ${resendCooldown}s' : 'Renvoyer le code',
+                style: const TextStyle(color: IscaeColors.green, fontSize: 12, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
         ),
@@ -343,15 +363,15 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
     );
   }
 
-  Widget _buildStep3({Key? key}) {
+  Widget _buildStep3({required bool wide, Key? key}) {
     return Column(
       key: key,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text('Définir votre mot de passe', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Text('Choisissez un mot de passe sécurisé pour votre compte.', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-        const SizedBox(height: 20),
+        Text('Définir votre mot de passe', style: TextStyle(fontSize: wide ? 15 : 14, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        Text('Choisissez un mot de passe sécurisé pour votre compte.', style: TextStyle(fontSize: wide ? 13 : 12, color: Colors.grey.shade600)),
+        SizedBox(height: wide ? 20 : 12),
         const AuthFieldLabel('Mot de passe *'),
         AuthTextField(
           controller: _passwordController,
@@ -360,11 +380,11 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
           obscure: !_showPwd,
           enabled: !_loading,
           suffix: IconButton(
-            icon: Icon(_showPwd ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+            icon: Icon(_showPwd ? Icons.visibility_off_outlined : Icons.visibility_outlined, size: 20),
             onPressed: () => setState(() => _showPwd = !_showPwd),
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: wide ? 16 : 10),
         const AuthFieldLabel('Confirmer le mot de passe *'),
         AuthTextField(
           controller: _confirmPasswordController,
@@ -376,10 +396,10 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         ),
         if (_pwdMismatch)
           Padding(
-            padding: const EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: 4),
             child: Text('Les mots de passe ne correspondent pas.', style: TextStyle(fontSize: 11, color: Colors.red.shade700)),
           ),
-        const SizedBox(height: 24),
+        SizedBox(height: wide ? 24 : 16),
         Theme(
           data: Theme.of(context).copyWith(
             elevatedButtonTheme: ElevatedButtonThemeData(
@@ -401,22 +421,22 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
     return Column(
       key: key,
       children: [
-        const Icon(Icons.check_circle, size: 72, color: Color(0xFF4CAF50)),
-        const SizedBox(height: 16),
+        const Icon(Icons.check_circle, size: 64, color: Color(0xFF4CAF50)),
+        const SizedBox(height: 14),
         const Text('Compte créé avec succès !', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text.rich(
           TextSpan(
             text: 'Bienvenue ',
-            style: TextStyle(fontSize: 13, color: Colors.grey),
+            style: const TextStyle(fontSize: 13, color: Colors.grey),
             children: [
               TextSpan(text: _studentName, style: const TextStyle(fontWeight: FontWeight.bold)),
-              const TextSpan(text: '. Redirection en cours...'),
+              const TextSpan(text: '. Redirection...'),
             ],
           ),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         const LinearProgressIndicator(color: Color(0xFF4CAF50), borderRadius: BorderRadius.all(Radius.circular(4))),
       ],
     );
@@ -490,9 +510,7 @@ class _RegisterFlowScreenState extends State<RegisterFlowScreen> with ResendCool
         studentId: _studentId!,
         email: _emailController.text.trim().toLowerCase(),
       );
-    } catch (_) {
-      // Échec silencieux côté UI
-    }
+    } catch (_) {}
     if (!mounted) return;
     setState(() {
       _loading = false;

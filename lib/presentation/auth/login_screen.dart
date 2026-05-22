@@ -5,9 +5,9 @@ import 'widgets/auth_shared.dart';
 
 // Définition locale des couleurs officielles du logo ISCAE
 class IscaeColors {
-  static const Color green = Color(0xFF0B8243);      // Vert texte/flèche
-  static const Color cyanDark = Color(0xFF0B8243);   // Bleu-gris de la sphère
-  static const Color cyanLight = Color(0xFF79C2C4);  // Bleu-cyan clair de la sphère
+  static const Color green = Color(0xFF0B8243); // Vert texte/flèche
+  static const Color cyanDark = Color(0xFF4A7479); // Bleu-gris de la sphère
+  static const Color cyanLight = Color(0xFF79C2C4); // Bleu-cyan clair de la sphère
   static const Color white = Color(0xFFFFFFFF);
 
   // Dégradé inspiré de la sphère pour les arrière-plans mobiles
@@ -45,6 +45,8 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
     final wide = MediaQuery.sizeOf(context).width >= 960;
 
     return Scaffold(
+      // Empêche l'interface de bouger ou de scroller quand le clavier sort
+      resizeToAvoidBottomInset: false,
       body: Row(
         children: [
           if (wide) const Expanded(flex: 5, child: AuthBrandingPanel()),
@@ -58,30 +60,34 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
               ),
               child: SafeArea(
                 child: Center(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: wide ? 24 : 20, vertical: wide ? 32 : 40),
+                  child: Padding(
+                    // Réduction des paddings sur mobile pour gagner de la place de base
+                    padding: EdgeInsets.symmetric(horizontal: wide ? 24 : 16, vertical: wide ? 32 : 12),
                     child: AuthFormCard(
-                      padding: EdgeInsets.symmetric(horizontal: wide ? 36 : 24, vertical: wide ? 40 : 32),
+                      // Padding interne de la Card réduit sur mobile pour éviter l'overflow
+                      padding: EdgeInsets.symmetric(horizontal: wide ? 36 : 20, vertical: wide ? 40 : 16),
                       child: Column(
+                        mainAxisSize: MainAxisSize.min, // Ajustement au contenu
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (!wide) ...[
-                            const Center(child: AuthLogoCircle(size: 72, imageSize: 64, onLightBackground: true)),
-                            const SizedBox(height: 12),
-                            Center(
+                            // Un logo légèrement plus compact sur mobile (64 au lieu de 72)
+                            const Center(child: AuthLogoCircle(size: 64, imageSize: 56, onLightBackground: true)),
+                            const SizedBox(height: 8),
+                            const Center(
                               child: Text(
                                 'ISCAE Réclamations',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.bold,
-                                  color: IscaeColors.green, // Vert ISCAE pour le titre
+                                  color: IscaeColors.green,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 28),
+                            const SizedBox(height: 16), // Réduit de 28 à 16
                           ],
-                          if (_step == _LoginStep.login) _buildLoginForm() else _buildDeviceOtpForm(),
-                          const SizedBox(height: 24),
+                          if (_step == _LoginStep.login) _buildLoginForm(wide) else _buildDeviceOtpForm(wide),
+                          const SizedBox(height: 16),
                           Text(
                             '© ${DateTime.now().year} ISCAE — Tous droits réservés',
                             textAlign: TextAlign.center,
@@ -100,15 +106,15 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
     );
   }
 
-  Widget _buildFormHeader({required IconData icon, required String title, required String subtitle, bool warning = false}) {
+  Widget _buildFormHeader({required IconData icon, required String title, required String subtitle, bool warning = false, required bool wide}) {
     return Column(
       children: [
+        // Icône plus petite sur mobile (52 au lieu de 64) pour gratter des pixels précieux
         Container(
-          width: 64,
-          height: 64,
+          width: wide ? 64 : 52,
+          height: wide ? 64 : 52,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            // Utilisation des tons de la sphère ISCAE (Cyan Light & Dark) pour l'icône
+            borderRadius: BorderRadius.circular(14),
             gradient: LinearGradient(
               colors: warning
                   ? const [Color(0xFFE65100), Color(0xFFFF9800)]
@@ -116,23 +122,23 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             ),
             boxShadow: [
               BoxShadow(
-                color: (warning ? const Color(0xFFE65100) : IscaeColors.cyanDark).withValues(alpha: 0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 8),
+                color: (warning ? const Color(0xFFE65100) : IscaeColors.cyanDark).withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Icon(icon, color: Colors.white, size: 28),
+          child: Icon(icon, color: Colors.white, size: wide ? 28 : 22),
         ),
-        const SizedBox(height: 16),
-        Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AuthColors.title)),
-        const SizedBox(height: 6),
-        Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, color: AuthColors.muted)),
+        const SizedBox(height: 10),
+        Text(title, style: TextStyle(fontSize: wide ? 22 : 19, fontWeight: FontWeight.w800, color: AuthColors.title)),
+        const SizedBox(height: 4),
+        Text(subtitle, textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AuthColors.muted)),
       ],
     );
   }
 
-  Widget _buildLoginForm() {
+  Widget _buildLoginForm(bool wide) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -140,8 +146,9 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           icon: Icons.shield_outlined,
           title: 'Bienvenue',
           subtitle: 'Connectez-vous à votre espace',
+          wide: wide,
         ),
-        const SizedBox(height: 32),
+        SizedBox(height: wide ? 32 : 16), // Espacement réduit sur mobile
         const AuthFieldLabel('Matricule ou Email'),
         AuthTextField(
           controller: _loginController,
@@ -149,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           prefixIcon: Icons.person_outline,
           enabled: !_loading,
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: wide ? 16 : 10),
         const AuthFieldLabel('Mot de passe'),
         AuthTextField(
           controller: _passwordController,
@@ -162,22 +169,25 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             onPressed: () => setState(() => _showPwd = !_showPwd),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: _loading ? null : () => Navigator.pushNamed(context, '/forgot-password'),
-            icon: const Icon(Icons.help_outline, size: 14, color: IscaeColors.green),
-            label: const Text(
-              'Mot de passe oublié ?',
-              style: TextStyle(fontWeight: FontWeight.w600, color: IscaeColors.green), // Changé en vert
+          child: SizedBox(
+            height: 32, // Contraint la hauteur du bouton texte pour économiser du layout
+            child: TextButton.icon(
+              onPressed: _loading ? null : () => Navigator.pushNamed(context, '/forgot-password'),
+              icon: const Icon(Icons.help_outline, size: 13, color: IscaeColors.green),
+              label: const Text(
+                'Mot de passe oublié ?',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: IscaeColors.green),
+              ),
             ),
           ),
         ),
         if (_errorMsg.isNotEmpty) ...[
           AuthErrorBanner(message: _errorMsg, onClose: () => setState(() => _errorMsg = '')),
+          const SizedBox(height: 8),
         ],
-        // Changement de la couleur du bouton principal (généralement géré par le widget ou via Theme, mais on s'assure de la cohérence ici)
         Theme(
           data: Theme.of(context).copyWith(
             elevatedButtonTheme: ElevatedButtonThemeData(
@@ -191,26 +201,30 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             onPressed: _handleLogin,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: wide ? 20 : 12),
         Row(
           children: [
             Expanded(child: Divider(color: Colors.grey.shade300)),
-            const SizedBox(width: 12),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 10),
+              child: Text('ou', style: TextStyle(color: AuthColors.muted, fontSize: 12)),
+            ),
             Expanded(child: Divider(color: Colors.grey.shade300)),
           ],
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: wide ? 20 : 12),
         Center(
           child: Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             alignment: WrapAlignment.center,
             children: [
-              const Text('Pas encore de compte ? ', style: TextStyle(color: AuthColors.muted, fontSize: 13)),
+              const Text('Pas encore de compte ? ', style: TextStyle(color: AuthColors.muted, fontSize: 12)),
               TextButton(
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                 onPressed: _loading ? null : () => Navigator.pushNamed(context, '/register'),
                 child: const Text(
                   'Créer mon compte',
-                  style: TextStyle(fontWeight: FontWeight.w700, color: IscaeColors.green), // Changé en vert
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: IscaeColors.green),
                 ),
               ),
             ],
@@ -220,7 +234,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
     );
   }
 
-  Widget _buildDeviceOtpForm() {
+  Widget _buildDeviceOtpForm(bool wide) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -229,58 +243,59 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           title: 'Nouvel appareil',
           subtitle: 'Code envoyé à $_maskedEmail',
           warning: true,
+          wide: wide,
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: wide ? 24 : 14),
         Container(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: Colors.orange.shade50,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.orange.shade200),
           ),
           child: Row(
             children: [
-              Icon(Icons.shield_outlined, color: Colors.orange.shade800, size: 20),
-              const SizedBox(width: 10),
+              Icon(Icons.shield_outlined, color: Colors.orange.shade800, size: 18),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Connexion depuis un nouvel appareil détectée. Vérifiez votre identité.',
-                  style: TextStyle(fontSize: 13, color: Colors.orange.shade900),
+                  'Nouvel appareil détecté. Vérifiez votre identité.',
+                  style: TextStyle(fontSize: 12, color: Colors.orange.shade900),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        SizedBox(height: wide ? 24 : 14),
         const AuthFieldLabel('Code à 6 chiffres'),
         OtpInputRow(
           key: _otpKey,
           enabled: !_loading,
           onChanged: (_) => setState(() => _errorMsg = ''),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: wide ? 20 : 12),
         Center(
           child: resendCooldown > 0
               ? Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               color: AuthColors.formBg,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AuthColors.fieldBorder),
             ),
-            child: Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 12, color: AuthColors.muted)),
+            child: Text('Renvoyer dans ${resendCooldown}s', style: const TextStyle(fontSize: 11, color: AuthColors.muted)),
           )
               : TextButton.icon(
             onPressed: _loading ? null : _handleResendOtp,
-            icon: const Icon(Icons.refresh, size: 16, color: IscaeColors.green),
-            label: const Text('Renvoyer le code', style: TextStyle(color: IscaeColors.green)),
+            icon: const Icon(Icons.refresh, size: 14, color: IscaeColors.green),
+            label: const Text('Renvoyer le code', style: TextStyle(fontSize: 12, color: IscaeColors.green)),
           ),
         ),
         if (_errorMsg.isNotEmpty) ...[
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           AuthErrorBanner(message: _errorMsg, onClose: () => setState(() => _errorMsg = '')),
         ],
-        const SizedBox(height: 20),
+        SizedBox(height: wide ? 20 : 12),
         Theme(
           data: Theme.of(context).copyWith(
             elevatedButtonTheme: ElevatedButtonThemeData(
@@ -294,17 +309,20 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
             onPressed: _handleVerifyDeviceOtp,
           ),
         ),
-        const SizedBox(height: 12),
-        TextButton.icon(
-          onPressed: _loading
-              ? null
-              : () => setState(() {
-            _step = _LoginStep.login;
-            _errorMsg = '';
-            _otpKey.currentState?.clear();
-          }),
-          icon: const Icon(Icons.arrow_back, size: 16, color: AuthColors.muted),
-          label: const Text('Retour à la connexion', style: TextStyle(color: AuthColors.muted)),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 32,
+          child: TextButton.icon(
+            onPressed: _loading
+                ? null
+                : () => setState(() {
+              _step = _LoginStep.login;
+              _errorMsg = '';
+              _otpKey.currentState?.clear();
+            }),
+            icon: const Icon(Icons.arrow_back, size: 14, color: AuthColors.muted),
+            label: const Text('Retour à la connexion', style: TextStyle(fontSize: 12, color: AuthColors.muted)),
+          ),
         ),
       ],
     );

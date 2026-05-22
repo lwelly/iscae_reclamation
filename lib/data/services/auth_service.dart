@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../core/constants/api_endpoints.dart';
+import '../../core/utils/api_error_message.dart';
 import 'api_client.dart';
 
 class AuthService {
@@ -28,7 +29,7 @@ class AuthService {
       return 'استجابة غير معرّفة من السيرفر';
     } on DioException catch (e) {
       if (e.response != null && e.response?.data is Map) return e.response?.data;
-      return 'خطأ في الشبكة أثناء تسجيل الدخول';
+      return formatApiError(e);
     }
   }
 
@@ -53,7 +54,7 @@ class AuthService {
       return 'استجابة غير صالحة';
     } on DioException catch (e) {
       if (e.response != null && e.response?.data is Map) return e.response?.data;
-      return 'خطأ في الاتصال بالشبكة';
+      return formatApiError(e);
     }
   }
 

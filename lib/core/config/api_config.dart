@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'api_base_url.dart';
 import '../constants/api_endpoints.dart';
 import '../../data/services/api_client.dart';
 import '../../data/services/student_service.dart';
@@ -66,5 +67,11 @@ class ApiConfig {
   void clearAuthToken() {
     _authToken = null;
     _apiClient.setToken('');
+  }
+
+  /// Après changement d'URL serveur (ex. point d'accès mobile).
+  Future<void> applyBaseUrl(String url) async {
+    await ApiBaseUrl.save(url);
+    initialize(authToken: _authToken);
   }
 }
