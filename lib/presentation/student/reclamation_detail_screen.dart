@@ -8,21 +8,28 @@ import 'reclamation_ui_helpers.dart';
 
 class ReclamationDetailScreen extends StatefulWidget {
   final int id;
+  final bool embedded;
+  final VoidCallback? onBack;
 
-  const ReclamationDetailScreen({super.key, required this.id});
+  const ReclamationDetailScreen({
+    super.key,
+    required this.id,
+    this.embedded = false,
+    this.onBack,
+  });
 
   @override
   State<ReclamationDetailScreen> createState() => _ReclamationDetailScreenState();
 }
 
-class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
-  final _cancelReasonController = TextEditingController();
-  bool _confirmCancelDialog = false;
-  bool _cancelling = false;
+class _ReclamationDetailScreenState extends State<ReclamationDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ReclamationController>().fetchDetails(widget.id);
     });
@@ -30,12 +37,9 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
 
   @override
   void dispose() {
-    _cancelReasonController.dispose();
+    _tabController.dispose();
     super.dispose();
   }
-
-  bool _canCancel(ReclamationModel? rec) =>
-      rec != null && ['submitted', 'received'].contains(rec.status);
 
   List<_ProgressStep> _progressSteps(ReclamationModel rec) {
     const order = ['submitted', 'received', 'in_review', 'resolved'];
@@ -55,6 +59,10 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
   }
 
   void _handleBackPressed() {
+    if (widget.onBack != null) {
+      widget.onBack!();
+      return;
+    }
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
       return;
@@ -69,30 +77,32 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     return s.replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
   }
 
-  Future<void> _cancelReclamation(ReclamationModel rec) async {
-    setState(() => _cancelling = true);
-    final controller = context.read<ReclamationController>();
-    final success = await controller.cancelReclamation(int.parse(rec.id));
-    if (!mounted) return;
-    setState(() {
-      _cancelling = false;
-      _confirmCancelDialog = false;
-    });
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Réclamation annulée avec succès.', style: TextStyle(fontSize: 12))),
-      );
-      Navigator.pop(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(controller.errorMessage ?? "Erreur lors de l'annulation.", style: const TextStyle(fontSize: 12))),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+
+    final body = Consumer<ReclamationController>(
+      builder: (context, controller, _) {
+        final rec = controller.selectedReclamation;
+        final loading = controller.isLoadingDetail;
+        final error = controller.errorMessage;
+
+        if (loading) return const Center(child: CircularProgressIndicator());
+        if (error != null && rec == null) return _ErrorState(message: error, onBack: _handleBackPressed);
+        if (rec != null) return _buildContent(context, rec, primary, controller);
+        return const SizedBox.shrink();
+      },
+    );
+
+    if (widget.embedded) {
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _handleBackPressed();
+        },
+        child: body,
+      );
+    }
 
     return PopScope(
       canPop: false,
@@ -101,32 +111,7 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
       },
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: Consumer<ReclamationController>(
-          builder: (context, controller, _) {
-            final rec = controller.selectedReclamation;
-            final loading = controller.isLoadingDetail;
-            final error = controller.errorMessage;
-
-            return Stack(
-              children: [
-                if (loading)
-                  const Center(child: CircularProgressIndicator())
-                else if (error != null && rec == null)
-                  _ErrorState(message: error, onBack: _handleBackPressed)
-                else if (rec != null)
-                    _buildContent(context, rec, primary, controller),
-                if (_confirmCancelDialog && rec != null)
-                  _CancelDialog(
-                    reference: rec.referenceNumber,
-                    reasonController: _cancelReasonController,
-                    cancelling: _cancelling,
-                    onClose: () => setState(() => _confirmCancelDialog = false),
-                    onConfirm: () => _cancelReclamation(rec),
-                  ),
-              ],
-            );
-          },
-        ),
+        body: body,
       ),
     );
   }
@@ -136,12 +121,12 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
         ? Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.schedule, size: 12, color: Colors.grey[600]),
+        Icon(Icons.schedule, size: 12, color: context.appMuted),
         const SizedBox(width: 4),
         Flexible(
           child: Text(
             ReclamationUi.formatDateTime(rec.resolvedAt ?? rec.updatedAt),
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]), // était 12
+            style: TextStyle(fontSize: 11, color: context.appMuted),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -153,13 +138,13 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: narrow ? 40 : 48,   // était 44/52
+          width: narrow ? 40 : 48,
           height: narrow ? 40 : 48,
           decoration: BoxDecoration(
             color: statusColor,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: narrow ? 20 : 24), // était 22/28
+          child: Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: narrow ? 20 : 24),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -168,11 +153,11 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
             children: [
               Text(
                 ReclamationUi.statusLabel(rec.status),
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: narrow ? 13 : 14), // était 15/16
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: narrow ? 13 : 14),
               ),
               Text(
                 ReclamationUi.statusDesc(rec.status),
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]), // était 13
+                style: TextStyle(fontSize: 11, color: context.appMuted),
               ),
             ],
           ),
@@ -219,7 +204,7 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
       name: rec.semestre.label,
       codeColor: const Color(0xFF0891B2),
       stats: [
-        ('Année universitaire', rec.semestre.academicYear ?? rec.academicYear),
+
       ],
     );
     if (stack) {
@@ -245,298 +230,295 @@ class _ReclamationDetailScreenState extends State<ReclamationDetailScreen> {
     final statusColor = ReclamationUi.statusColor(rec.status);
     final steps = _progressSteps(rec);
     final meeting = rec.meeting;
+    final topInset = widget.embedded ? 0.0 : MediaQuery.paddingOf(context).top;
+    final pad = MediaQuery.sizeOf(context).width >= 700 ? 24.0 : 16.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wide = constraints.maxWidth >= 700;
-        final pad = wide ? 24.0 : 16.0;
-        final topInset = MediaQuery.paddingOf(context).top;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: EdgeInsets.fromLTRB(pad, topInset + (widget.embedded ? 8 : 20), pad, 12),
+          child: _buildPageHeader(rec, statusColor),
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: pad),
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+            indicatorSize: TabBarIndicatorSize.label,
+            tabs: const [
+              Tab(text: 'Suivi'),
+              Tab(text: 'Détails'),
+              Tab(text: 'Historique'),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildSuiviTab(context, rec, statusColor, steps, meeting, pad),
+              _buildDetailsTab(context, rec, meeting, pad),
+              _buildHistoriqueTab(rec, pad),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
-        return CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(pad, topInset + 8, pad, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPageHeader(ReclamationModel rec, Color statusColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _handleBackPressed,
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Suivez l'état de votre réclamation",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: context.appOnSurface,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          icon: const Icon(Icons.arrow_back),
-                          onPressed: _handleBackPressed,
+                        Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: 15),
+                        const SizedBox(width: 5),
+                        Text(
+                          ReclamationUi.statusLabel(rec.status),
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11),
                         ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: context.appSurfaceLow,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: context.appBorder),
+                    ),
+                    child: Text(
+                      '#${rec.referenceNumber}',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.appMuted),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuiviTab(
+    BuildContext context,
+    ReclamationModel rec,
+    Color statusColor,
+    List<_ProgressStep> steps,
+    Map<String, dynamic>? meeting,
+    double pad,
+  ) {
+    final stackModules = MediaQuery.sizeOf(context).width < 700;
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(pad, 16, pad, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildStatusBanner(rec, statusColor, narrow: stackModules),
+          const SizedBox(height: 16),
+          _SectionCard(
+            title: 'Progression',
+            icon: Icons.track_changes,
+            child: _ProgressBar(steps: steps, compact: stackModules),
+          ),
+          const SizedBox(height: 16),
+          _buildModuleSemesterRow(rec, stack: stackModules),
+          const SizedBox(height: 16),
+          _SectionCard(
+            title: 'Informations rapides',
+            icon: Icons.bolt,
+            child: Column(
+              children: [
+                _QuickRow('Référence', rec.referenceNumber),
+                _QuickRow('Type', ReclamationUi.typeLabel(rec.type), chip: ReclamationUi.typeColor(rec.type)),
+                _QuickRow('Soumis le', ReclamationUi.formatDateLong(rec.createdAt)),
+                if (rec.resolvedAt != null) _QuickRow('Résolu le', ReclamationUi.formatDateLong(rec.resolvedAt)),
+                _QuickRow('Délai de traitement', ReclamationUi.processingDelay(rec.createdAt, rec.resolvedAt)),
+                if (rec.academicYear.isNotEmpty) _QuickRow('Année univ.', rec.academicYear),
+              ],
+            ),
+          ),
+          if (rec.isEscalated) ...[
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Réclamation escaladée',
+              icon: Icons.arrow_upward,
+              iconColor: Colors.orange,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (rec.escalationReason != null)
+                    Text(rec.escalationReason!, style: const TextStyle(height: 1.5, fontSize: 12)),
+                  if (rec.escalatedAt != null) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.schedule, size: 12, color: context.appMuted),
+                        const SizedBox(width: 4),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Suivez l'état de votre réclamation",
-                                style: TextStyle(
-                                  fontSize: wide ? 18 : 15, // était 22/18
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: statusColor,
-                                      borderRadius: BorderRadius.circular(24),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(ReclamationUi.statusIcon(rec.status), color: Colors.white, size: 15),
-                                        const SizedBox(width: 5),
-                                        Text(
-                                          ReclamationUi.statusLabel(rec.status),
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11), // était 13
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '#${rec.referenceNumber}',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey[700]), // était 13
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          child: Text(
+                            ReclamationUi.formatDateTime(rec.escalatedAt),
+                            style: TextStyle(fontSize: 11, color: context.appMuted),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    if (wide)
-                      _buildWideLayout(context, rec, primary, controller, statusColor, steps, meeting)
-                    else
-                      _buildNarrowLayout(context, rec, primary, controller, statusColor, steps, meeting),
-                    const SizedBox(height: 32),
                   ],
-                ),
+                ],
               ),
             ),
           ],
-        );
-      },
-    );
-  }
-
-  Widget _buildNarrowLayout(BuildContext context, ReclamationModel rec, Color primary,
-      ReclamationController controller, Color statusColor, List<_ProgressStep> steps, Map<String, dynamic>? meeting) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ..._buildMainSections(rec, statusColor, steps, meeting, stackModules: true),
-        const SizedBox(height: 16),
-        ..._buildSidebarSections(rec, controller),
-      ],
-    );
-  }
-
-  Widget _buildWideLayout(BuildContext context, ReclamationModel rec, Color primary,
-      ReclamationController controller, Color statusColor, List<_ProgressStep> steps, Map<String, dynamic>? meeting) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Column(children: _buildMainSections(rec, statusColor, steps, meeting, stackModules: false)),
-        ),
-        const SizedBox(width: 16),
-        SizedBox(
-          width: 320,
-          child: Column(children: _buildSidebarSections(rec, controller)),
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildMainSections(ReclamationModel rec, Color statusColor, List<_ProgressStep> steps,
-      Map<String, dynamic>? meeting, {required bool stackModules}) {
-    return [
-      _buildStatusBanner(rec, statusColor, narrow: stackModules),
-      const SizedBox(height: 16),
-      _SectionCard(
-        title: 'Progression',
-        icon: Icons.track_changes,
-        child: _ProgressBar(steps: steps, compact: stackModules),
-      ),
-      const SizedBox(height: 16),
-      _SectionCard(
-        title: 'Détails de la réclamation',
-        icon: Icons.info_outline,
-        child: Column(
-          children: [
-            _InfoRow('Référence', rec.referenceNumber, mono: true),
-            _InfoRow('Type', ReclamationUi.typeLabel(rec.type), chip: true, chipColor: ReclamationUi.typeColor(rec.type)),
-            _InfoRow('Note actuelle', '${_formatNote(rec.noteActuelle)} / 20', note: true),
-            _InfoRow(
-              'Note réclamée',
-              rec.noteReclamee != null ? '${_formatNote(rec.noteReclamee!)} / 20' : '—',
-              noteClaim: true,
-            ),
-            _InfoRow('Date de soumission', ReclamationUi.formatDateTime(rec.createdAt)),
-            if (rec.resolvedAt != null)
-              _InfoRow('Date de résolution', ReclamationUi.formatDateTime(rec.resolvedAt)),
-            if (rec.justification.isNotEmpty) ...[
-              const Divider(),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Justification', style: TextStyle(fontSize: 11, color: Colors.grey[600])), // était 13
+          if (meeting != null && meeting['scheduled_at'] != null) ...[
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Réunion planifiée',
+              icon: Icons.event,
+              iconColor: Colors.blue,
+              child: Column(
+                children: [
+                  _InfoRow('Date & Heure', ReclamationUi.formatDateTime(meeting['scheduled_at']?.toString())),
+                  if (meeting['location'] != null) _InfoRow('Lieu', meeting['location'].toString()),
+                ],
               ),
-              const SizedBox(height: 6),
-              Text(rec.justification, style: const TextStyle(fontSize: 12, height: 1.6)), // était 14
-            ],
+            ),
           ],
-        ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _handleBackPressed,
+            icon: const Icon(Icons.list, size: 16),
+            label: const Text('Voir toutes mes réclamations', style: TextStyle(fontSize: 12)),
+            style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 44)),
+          ),
+        ],
       ),
-      const SizedBox(height: 16),
-      _buildModuleSemesterRow(rec, stack: stackModules),
-      const SizedBox(height: 16),
-      if (rec.adminResponse != null && rec.adminResponse!.isNotEmpty)
-        _AdminResponseCard(
-          response: rec.adminResponse!,
-          rejected: rec.status == 'rejected',
-          date: rec.respondedAt,
-        ),
-      if (meeting != null && meeting['scheduled_at'] != null) ...[
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'Réunion planifiée',
-          icon: Icons.event,
-          iconColor: Colors.blue,
-          child: Column(
-            children: [
-              _InfoRow('Date & Heure', ReclamationUi.formatDateTime(meeting['scheduled_at']?.toString())),
-              if (meeting['location'] != null) _InfoRow('Lieu', meeting['location'].toString()),
-              if (meeting['notes'] != null) ...[
-                const Divider(),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Notes', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+    );
+  }
+
+  Widget _buildDetailsTab(BuildContext context, ReclamationModel rec, Map<String, dynamic>? meeting, double pad) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(pad, 16, pad, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _SectionCard(
+            title: 'Détails de la réclamation',
+            icon: Icons.info_outline,
+            child: Column(
+              children: [
+                _InfoRow('Référence', rec.referenceNumber, mono: true),
+                _InfoRow('Type', ReclamationUi.typeLabel(rec.type), chip: true, chipColor: ReclamationUi.typeColor(rec.type)),
+                _InfoRow('Note actuelle', '${_formatNote(rec.noteActuelle)} / 20', note: true),
+                _InfoRow(
+                  'Note réclamée',
+                  rec.noteReclamee != null ? '${_formatNote(rec.noteReclamee!)} / 20' : '—',
+                  noteClaim: true,
                 ),
-                const SizedBox(height: 4),
-                Text(meeting['notes'].toString(), style: const TextStyle(fontSize: 12)),
+                _InfoRow('Date de soumission', ReclamationUi.formatDateTime(rec.createdAt)),
+                if (rec.resolvedAt != null)
+                  _InfoRow('Date de résolution', ReclamationUi.formatDateTime(rec.resolvedAt)),
               ],
-            ],
+            ),
           ),
-        ),
-      ],
-      if (rec.attachments.isNotEmpty) ...[
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'Pièces jointes (${rec.attachments.length})',
-          icon: Icons.attach_file,
-          child: Column(
-            children: rec.attachments.map((a) => _AttachmentRow(attachment: a)).toList(),
-          ),
-        ),
-      ],
-      const SizedBox(height: 16),
-      _SectionCard(
+          if (rec.justification.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Justification',
+              icon: Icons.description_outlined,
+              child: Text(rec.justification, style: const TextStyle(fontSize: 13, height: 1.65)),
+            ),
+          ],
+          if (rec.adminResponse != null && rec.adminResponse!.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _AdminResponseCard(
+              response: rec.adminResponse!,
+              rejected: rec.status == 'rejected',
+              date: rec.respondedAt,
+            ),
+          ],
+          if (meeting != null && meeting['scheduled_at'] != null && meeting['notes'] != null) ...[
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Notes de réunion',
+              icon: Icons.notes,
+              child: Text(meeting['notes'].toString(), style: const TextStyle(fontSize: 12, height: 1.5)),
+            ),
+          ],
+          if (rec.attachments.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _SectionCard(
+              title: 'Pièces jointes (${rec.attachments.length})',
+              icon: Icons.attach_file,
+              child: Column(
+                children: rec.attachments.map((a) => _AttachmentRow(attachment: a)).toList(),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoriqueTab(ReclamationModel rec, double pad) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(pad, 16, pad, 24),
+      child: _SectionCard(
         title: 'Historique des statuts',
         icon: Icons.history,
         child: rec.history.isEmpty
             ? Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Column(
-            children: [
-              Icon(Icons.timeline, size: 32, color: Colors.grey[400]),
-              const SizedBox(height: 8),
-              Text('Aucun historique disponible', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            ],
-          ),
-        )
-            : Column(children: rec.history.map((h) => _HistoryItem(history: h)).toList()),
-      ),
-    ];
-  }
-
-  List<Widget> _buildSidebarSections(ReclamationModel rec, ReclamationController controller) {
-    return [
-      _SectionCard(
-        title: 'Informations rapides',
-        icon: Icons.bolt,
-        child: Column(
-          children: [
-            _QuickRow('Référence', rec.referenceNumber),
-            _QuickRow('Type', ReclamationUi.typeLabel(rec.type), chip: ReclamationUi.typeColor(rec.type)),
-            _QuickRow('Soumis le', ReclamationUi.formatDateLong(rec.createdAt)),
-            if (rec.resolvedAt != null) _QuickRow('Résolu le', ReclamationUi.formatDateLong(rec.resolvedAt)),
-            _QuickRow('Délai de traitement', ReclamationUi.processingDelay(rec.createdAt, rec.resolvedAt)),
-            if (rec.academicYear.isNotEmpty) _QuickRow('Année univ.', rec.academicYear),
-          ],
-        ),
-      ),
-      if (rec.isEscalated) ...[
-        const SizedBox(height: 16),
-        _SectionCard(
-          title: 'Réclamation escaladée',
-          icon: Icons.arrow_upward,
-          iconColor: Colors.orange,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (rec.escalationReason != null)
-                Text(rec.escalationReason!, style: const TextStyle(height: 1.5, fontSize: 12)),
-              if (rec.escalatedAt != null) ...[
-                const SizedBox(height: 8),
-                Row(
+                padding: const EdgeInsets.symmetric(vertical: 32),
+                child: Column(
                   children: [
-                    Icon(Icons.schedule, size: 12, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        ReclamationUi.formatDateTime(rec.escalatedAt),
-                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
+                    Icon(Icons.timeline, size: 40, color: context.appMuted),
+                    const SizedBox(height: 12),
+                    Text('Aucun historique disponible', style: TextStyle(fontSize: 13, color: context.appMuted)),
                   ],
                 ),
-              ],
-            ],
-          ),
-        ),
-      ],
-      const SizedBox(height: 16),
-      if (_canCancel(rec))
-        OutlinedButton.icon(
-          onPressed: () => setState(() => _confirmCancelDialog = true),
-          icon: const Icon(Icons.cancel_outlined, color: Colors.red, size: 16),
-          label: const Text('Annuler la réclamation', style: TextStyle(color: Colors.red, fontSize: 12)),
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(double.infinity, 40),
-            side: const BorderSide(color: Colors.red),
-          ),
-        ),
-      if (_canCancel(rec)) const SizedBox(height: 8),
-      OutlinedButton.icon(
-        onPressed: () => Navigator.pop(context),
-        icon: const Icon(Icons.list, size: 16),
-        label: const Text('Voir toutes mes réclamations', style: TextStyle(fontSize: 12)),
-        style: OutlinedButton.styleFrom(minimumSize: const Size(double.infinity, 40)),
+              )
+            : _HistoryTimeline(items: rec.history),
       ),
-    ];
+    );
   }
 }
+
+// ─── Data classes ────────────────────────────────────────────────────────────
 
 class _ProgressStep {
   final String label;
@@ -546,6 +528,8 @@ class _ProgressStep {
   const _ProgressStep({required this.label, required this.done, required this.active, this.rejected = false});
 }
 
+// ─── Widgets ─────────────────────────────────────────────────────────────────
+
 class _ProgressBar extends StatelessWidget {
   final List<_ProgressStep> steps;
   final bool compact;
@@ -554,9 +538,9 @@ class _ProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final circleSize = compact ? 24.0 : 28.0;   // était 26/32
-    final iconSize   = compact ? 12.0 : 14.0;   // était 13/16
-    final labelSize  = compact ? 8.0  : 10.0;   // était 9/11
+    final circleSize = compact ? 24.0 : 28.0;
+    final iconSize   = compact ? 12.0 : 14.0;
+    final labelSize  = compact ? 8.0  : 10.0;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: compact ? 4 : 8, horizontal: compact ? 2 : 8),
@@ -676,7 +660,7 @@ class _SectionCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 13,   // était 15
+                    fontSize: 13,
                     color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
@@ -717,7 +701,7 @@ class _InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600]))), // était 13
+          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600]))),
           if (chip)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -725,7 +709,7 @@ class _InfoRow extends StatelessWidget {
                 color: (chipColor ?? Colors.grey).withOpacity(0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: chipColor)), // était 12
+              child: Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: chipColor)),
             )
           else
             Expanded(
@@ -746,7 +730,7 @@ class _InfoRow extends StatelessWidget {
                     value,
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      fontSize: 11,   // était 13
+                      fontSize: 11,
                       fontFamily: mono ? 'monospace' : null,
                       color: noteClaim ? const Color(0xFFC2410C) : note ? const Color(0xFF1D4ED8) : null,
                     ),
@@ -784,9 +768,10 @@ class _ModuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 0,
+      color: context.appCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: context.appBorder),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -796,7 +781,7 @@ class _ModuleCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  width: 40,      // était 44
+                  width: 40,
                   height: 40,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(colors: iconGradient),
@@ -812,7 +797,7 @@ class _ModuleCard extends StatelessWidget {
                       Text(
                         code,
                         style: TextStyle(
-                          fontSize: 11,   // était 12
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: codeColor ?? const Color(0xFF6366F1),
                           letterSpacing: 0.5,
@@ -820,7 +805,7 @@ class _ModuleCard extends StatelessWidget {
                       ),
                       Text(
                         name,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12), // était 14
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -836,8 +821,8 @@ class _ModuleCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(s.$1, style: TextStyle(fontSize: 10, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis), // était 11
-                    Text(s.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis), // était 14
+                    Text(s.$1, style: TextStyle(fontSize: 10, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(s.$2, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ))
@@ -881,17 +866,17 @@ class _AdminResponseCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     "Réponse de l'administration",
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13), // était défaut
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                   ),
                 ),
                 if (date != null)
-                  Text(ReclamationUi.formatDateTime(date), style: TextStyle(fontSize: 11, color: Colors.grey[600])), // était 12
+                  Text(ReclamationUi.formatDateTime(date), style: TextStyle(fontSize: 11, color: Colors.grey[600])),
               ],
             ),
           ),
           Padding(
             padding: const EdgeInsets.all(14),
-            child: Text(response, style: const TextStyle(height: 1.7, fontSize: 12)), // était 14
+            child: Text(response, style: const TextStyle(height: 1.7, fontSize: 12)),
           ),
         ],
       ),
@@ -912,7 +897,7 @@ class _AttachmentRow extends StatelessWidget {
           Icon(
             ReclamationUi.attachmentIcon(attachment.mimeType),
             color: ReclamationUi.attachmentIconColor(attachment.mimeType),
-            size: 28,   // était 32
+            size: 28,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -921,12 +906,12 @@ class _AttachmentRow extends StatelessWidget {
               children: [
                 Text(
                   attachment.fileName,
-                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12), // était défaut
+                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (attachment.fileSize != null)
-                  Text(ReclamationUi.formatFileSize(attachment.fileSize), style: TextStyle(fontSize: 11, color: Colors.grey[600])), // était 12
+                  Text(ReclamationUi.formatFileSize(attachment.fileSize), style: TextStyle(fontSize: 11, color: Colors.grey[600])),
               ],
             ),
           ),
@@ -946,50 +931,111 @@ class _AttachmentRow extends StatelessWidget {
   }
 }
 
-class _HistoryItem extends StatelessWidget {
-  final ReclamationHistory history;
-  const _HistoryItem({required this.history});
+class _HistoryTimeline extends StatelessWidget {
+  final List<ReclamationHistory> items;
+
+  const _HistoryTimeline({required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
+    return Column(
+      children: List.generate(items.length, (i) {
+        final h = items[i];
+        final isLast = i == items.length - 1;
+        final statusColor = ReclamationUi.statusColor(h.newStatus);
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (history.oldStatus != null) ...[
-                _StatusMiniChip(status: history.oldStatus!),
-                const Icon(Icons.arrow_forward, size: 11, color: Colors.grey),
-              ],
-              _StatusMiniChip(status: history.newStatus, filled: true),
-              Text(ReclamationUi.formatDateTime(history.createdAt), style: TextStyle(fontSize: 10, color: Colors.grey[600])), // était 11
+              SizedBox(
+                width: 28,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: statusColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                        boxShadow: [
+                          BoxShadow(color: statusColor.withValues(alpha: 0.35), blurRadius: 4),
+                        ],
+                      ),
+                    ),
+                    if (!isLast)
+                      Expanded(
+                        child: Container(
+                          width: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          color: context.appBorder,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 16),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: context.appSurfaceLow,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.appBorder),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            if (h.oldStatus != null) ...[
+                              _StatusMiniChip(status: h.oldStatus!),
+                              Icon(Icons.arrow_forward, size: 12, color: context.appMuted),
+                            ],
+                            _StatusMiniChip(status: h.newStatus, filled: true),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.schedule, size: 12, color: context.appMuted),
+                            const SizedBox(width: 4),
+                            Text(
+                              ReclamationUi.formatDateTime(h.createdAt),
+                              style: TextStyle(fontSize: 11, color: context.appMuted),
+                            ),
+                          ],
+                        ),
+                        if (h.comment != null && h.comment!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(h.comment!, style: const TextStyle(fontSize: 12, height: 1.45)),
+                        ],
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Icon(Icons.person_outline, size: 12, color: context.appMuted),
+                            const SizedBox(width: 4),
+                            Text(
+                              h.changedByLabel,
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.appMuted),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-          if (history.comment != null && history.comment!.isNotEmpty) ...[
-            const SizedBox(height: 5),
-            Text(history.comment!, style: const TextStyle(fontSize: 11, height: 1.4)), // était 13
-          ],
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.person_outline, size: 11, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Text(history.changedByLabel, style: TextStyle(fontSize: 10, color: Colors.grey[600])), // était 11
-            ],
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 }
@@ -1010,7 +1056,7 @@ class _StatusMiniChip extends StatelessWidget {
       ),
       child: Text(
         ReclamationUi.statusLabel(status),
-        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: filled ? Colors.white : color), // était 10
+        style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: filled ? Colors.white : color),
       ),
     );
   }
@@ -1029,19 +1075,19 @@ class _QuickRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600]))), // était 13
+          Expanded(child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[600]))),
           if (chip != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
               decoration: BoxDecoration(color: chip!.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-              child: Text(value, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chip)), // était 11
+              child: Text(value, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: chip)),
             )
           else
             Expanded(
               flex: 2,
               child: Text(
                 value,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600), // était 13
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.right,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 2,
@@ -1074,85 +1120,6 @@ class _ErrorState extends StatelessWidget {
             label: const Text('Retour', style: TextStyle(fontSize: 12)),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CancelDialog extends StatelessWidget {
-  final String reference;
-  final TextEditingController reasonController;
-  final bool cancelling;
-  final VoidCallback onClose;
-  final VoidCallback onConfirm;
-
-  const _CancelDialog({
-    required this.reference,
-    required this.reasonController,
-    required this.cancelling,
-    required this.onClose,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black54,
-      child: Center(
-        child: Card(
-          margin: const EdgeInsets.all(24),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.warning_amber, color: Colors.red, size: 20),
-                    SizedBox(width: 8),
-                    Text('Annuler la réclamation', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)), // était 16
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text('Êtes-vous sûr de vouloir annuler la réclamation $reference ?', style: const TextStyle(fontSize: 12)),
-                const SizedBox(height: 4),
-                const Text('Cette action est irréversible.', style: TextStyle(color: Colors.red, fontSize: 11)), // était 13
-                const SizedBox(height: 12),
-                TextField(
-                  controller: reasonController,
-                  style: const TextStyle(fontSize: 12),
-                  decoration: const InputDecoration(
-                    labelText: "Motif d'annulation (optionnel)",
-                    labelStyle: TextStyle(fontSize: 12),
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: cancelling ? null : onClose,
-                      child: const Text('Conserver', style: TextStyle(fontSize: 12)),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: cancelling ? null : onConfirm,
-                      style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                      child: cancelling
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text("Confirmer l'annulation", style: TextStyle(fontSize: 12)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

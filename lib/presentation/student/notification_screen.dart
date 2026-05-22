@@ -5,7 +5,7 @@ import '../../core/theme/app_palette.dart';
 import '../../data/models/notification_model.dart';
 import 'notification_controller.dart';
 import 'notification_ui_helpers.dart';
-import 'reclamation_detail_screen.dart';
+import 'main_layout_screen.dart';
 
 class NotificationScreen extends StatefulWidget {
   final void Function({int? reclamationId})? onOpenReclamations;
@@ -97,10 +97,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
       return;
     }
 
-    await Navigator.of(context, rootNavigator: true).pushNamed('/reclamations');
-    if (!mounted || reclamationId == null) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: reclamationId)),
+    await Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => MainLayoutScreen(
+          initialIndex: 1,
+          initialReclamationDetailId: reclamationId,
+        ),
+      ),
     );
   }
 

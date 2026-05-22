@@ -14,13 +14,20 @@ import 'notification_controller.dart';
 import 'notification_screen.dart';
 import 'profile_controller.dart';
 import 'profile_screen.dart';
-import 'reclamation_detail_screen.dart';
+import 'reclamation_controller.dart';
 import 'reclamation_screen.dart';
 import '../auth/widgets/auth_shared.dart';
 import 'widgets/profile_avatar.dart';
 
 class MainLayoutScreen extends StatefulWidget {
-  const MainLayoutScreen({super.key});
+  final int initialIndex;
+  final int? initialReclamationDetailId;
+
+  const MainLayoutScreen({
+    super.key,
+    this.initialIndex = 0,
+    this.initialReclamationDetailId,
+  });
 
   @override
   State<MainLayoutScreen> createState() => _MainLayoutScreenState();
@@ -45,7 +52,14 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _initData());
+    _selectedIndex = widget.initialIndex.clamp(0, 4);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initData();
+      final detailId = widget.initialReclamationDetailId;
+      if (detailId != null && mounted) {
+        context.read<ReclamationController>().showEmbeddedDetail(detailId);
+      }
+    });
   }
 
   bool get _isDark => context.watch<ThemeController>().isDark;
@@ -163,20 +177,22 @@ class _MainLayoutScreenState extends State<MainLayoutScreen> {
                                 onNewReclamation: () => _selectIndex(2),
                                 onViewAllReclamations: () => _selectIndex(1),
                               ),
-                              const ReclamationScreen(),
-                              CreateReclamationScreen(onBackToDashboard: () => _selectIndex(0)),
+                              ReclamationScreen(
+                                embedded: true,
+                                onNewReclamation: () => _selectIndex(2),
+                              ),
+                              CreateReclamationScreen(
+                                onBackToDashboard: () => _selectIndex(0),
+                                onSubmittedDetail: (id) {
+                                  _selectIndex(1);
+                                  context.read<ReclamationController>().showEmbeddedDetail(id);
+                                },
+                              ),
                               NotificationScreen(
                                 onOpenReclamations: ({int? reclamationId}) {
                                   _selectIndex(1);
                                   if (reclamationId != null) {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      if (!mounted) return;
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (_) => ReclamationDetailScreen(id: reclamationId),
-                                        ),
-                                      );
-                                    });
+                                    context.read<ReclamationController>().showEmbeddedDetail(reclamationId);
                                   }
                                 },
                               ),

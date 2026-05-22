@@ -14,8 +14,13 @@ import 'reclamation_ui_helpers.dart';
 class CreateReclamationScreen extends StatefulWidget {
   /// Utilisé quand l'écran est intégré dans [MainLayoutScreen].
   final VoidCallback? onBackToDashboard;
+  final void Function(int reclamationId)? onSubmittedDetail;
 
-  const CreateReclamationScreen({super.key, this.onBackToDashboard});
+  const CreateReclamationScreen({
+    super.key,
+    this.onBackToDashboard,
+    this.onSubmittedDetail,
+  });
 
   @override
   State<CreateReclamationScreen> createState() => _CreateReclamationScreenState();
@@ -300,10 +305,14 @@ class _CreateReclamationScreenState extends State<CreateReclamationScreen> {
       _notify('Réclamation soumise avec succès ! Redirection…');
       await Future.delayed(const Duration(milliseconds: 1200));
       if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: newId)),
-      );
+      if (widget.onSubmittedDetail != null) {
+        widget.onSubmittedDetail!(newId);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: newId)),
+        );
+      }
     } else {
       setState(() => _globalError =
           controller.errorMessage ?? 'Une erreur inattendue est survenue.');

@@ -2,13 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_palette.dart';
 import '../../data/models/reclamation_model.dart';
-import 'create_reclamation_screen.dart';
+import 'main_layout_screen.dart';
 import 'reclamation_controller.dart';
 import 'reclamation_detail_screen.dart';
 import 'reclamation_ui_helpers.dart';
 
 class ReclamationScreen extends StatefulWidget {
-  const ReclamationScreen({super.key});
+  /// Intégré dans [MainLayoutScreen] (sidebar + barre d'app).
+  final bool embedded;
+  final VoidCallback? onNewReclamation;
+
+  const ReclamationScreen({
+    super.key,
+    this.embedded = false,
+    this.onNewReclamation,
+  });
 
   @override
   State<ReclamationScreen> createState() => _ReclamationScreenState();
@@ -88,21 +96,32 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
     });
   }
 
-  void _goDetail(ReclamationModel r) {
+  void _goDetail(ReclamationModel r, ReclamationController controller) {
+    final id = int.tryParse(r.id);
+    if (id == null) return;
+    if (widget.embedded) {
+      controller.showEmbeddedDetail(id);
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ReclamationDetailScreen(id: int.parse(r.id)),
+        builder: (_) => MainLayoutScreen(
+          initialIndex: 1,
+          initialReclamationDetailId: id,
+        ),
       ),
-    ).then((_) {
-      if (mounted) context.read<ReclamationController>().fetchReclamations();
-    });
+    );
   }
 
   Future<void> _openNew() async {
+    if (widget.onNewReclamation != null) {
+      widget.onNewReclamation!();
+      return;
+    }
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const CreateReclamationScreen()),
+      MaterialPageRoute(builder: (_) => const MainLayoutScreen(initialIndex: 2)),
     );
     if (mounted) context.read<ReclamationController>().fetchReclamations();
   }
@@ -111,11 +130,29 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Consumer<ReclamationController>(
-        builder: (context, controller, _) {
-          final list = controller.reclamations;
+    return Consumer<ReclamationController>(
+      builder: (context, controller, _) {
+        if (widget.embedded && controller.embeddedDetailId != null) {
+          return ReclamationDetailScreen(
+            id: controller.embeddedDetailId!,
+            embedded: true,
+            onBack: controller.closeEmbeddedDetail,
+          );
+        }
+
+        final listBody = _buildListBody(context, controller, primary);
+        if (widget.embedded) return listBody;
+
+        return Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: listBody,
+        );
+      },
+    );
+  }
+
+  Widget _buildListBody(BuildContext context, ReclamationController controller, Color primary) {
+    final list = controller.reclamations;
           final filtered = _filtered(list);
           final totalPages = (filtered.length / _perPage).ceil().clamp(1, 9999);
           final safePage = _page.clamp(1, totalPages);
@@ -293,7 +330,7 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                             page: safePage,
                             totalPages: totalPages,
                             onPageChanged: (p) => setState(() => _page = p),
-                            onRowTap: _goDetail,
+                            onRowTap: (r) => _goDetail(r, controller),
                           );
                         }
                         return _ReclamationTable(
@@ -302,16 +339,13 @@ class _ReclamationScreenState extends State<ReclamationScreen> {
                           page: safePage,
                           totalPages: totalPages,
                           onPageChanged: (p) => setState(() => _page = p),
-                          onRowTap: _goDetail,
+                          onRowTap: (r) => _goDetail(r, controller),
                         );
                       },
                     ),
               ],
             ),
           );
-        },
-      ),
-    );
   }
 }
 

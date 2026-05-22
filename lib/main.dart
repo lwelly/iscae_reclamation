@@ -83,7 +83,7 @@ class IscaeApp extends StatelessWidget {
         '/register': (context) => const RegisterFlowScreen(),
         '/forgot-password': (context) => const ForgotPasswordFlow(),
         '/dashboard': (context) => const MainLayoutScreen(), // Redirige vers le layout complet avec Sidebar
-        '/reclamations': (context) => const ReclamationScreen(),
+        '/reclamations': (context) => const MainLayoutScreen(initialIndex: 1),
         '/profile': (context) => const ProfileScreen(),
       },
     );

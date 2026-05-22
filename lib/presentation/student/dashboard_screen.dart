@@ -5,8 +5,8 @@ import '../../core/theme/app_palette.dart';
 import '../../data/models/reclamation_model.dart';
 import 'create_reclamation_screen.dart';
 import 'dashboard_controller.dart';
-import 'reclamation_detail_screen.dart';
-import 'reclamation_screen.dart';
+import 'main_layout_screen.dart';
+import 'reclamation_controller.dart';
 
 /// Couleurs graphiques alignées sur DashboardView.vue
 class _DashColors {
@@ -112,15 +112,30 @@ class _StudentDashboardState extends State<StudentDashboard> {
     if (widget.onViewAllReclamations != null) {
       widget.onViewAllReclamations!();
     } else {
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const ReclamationScreen()));
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MainLayoutScreen(initialIndex: 1)),
+      );
     }
   }
 
   void _openDetail(ReclamationModel r) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ReclamationDetailScreen(id: int.parse(r.id))),
-    );
+    final id = int.tryParse(r.id);
+    if (id == null) return;
+    if (widget.embedded) {
+      context.read<ReclamationController>().showEmbeddedDetail(id);
+      widget.onViewAllReclamations?.call();
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MainLayoutScreen(
+            initialIndex: 1,
+            initialReclamationDetailId: id,
+          ),
+        ),
+      );
+    }
   }
 
   String _formatDateShort(String? d) {

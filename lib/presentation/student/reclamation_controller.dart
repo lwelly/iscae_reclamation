@@ -10,8 +10,10 @@ class ReclamationController extends ChangeNotifier {
   bool _isLoading = false;
   bool _isLoadingDetail = false;
   String? _errorMessage;
+  int? _embeddedDetailId;
 
   List<ReclamationModel> get reclamations => _reclamations;
+  int? get embeddedDetailId => _embeddedDetailId;
   ReclamationModel? get selectedReclamation => _selectedReclamation;
   bool get isLoading => _isLoading;
   bool get isLoadingDetail => _isLoadingDetail;
@@ -56,6 +58,18 @@ class ReclamationController extends ChangeNotifier {
     _selectedReclamation = null;
     _errorMessage = null;
     notifyListeners();
+  }
+
+  /// Ouvre le détail dans l'onglet réclamations du [MainLayoutScreen].
+  void showEmbeddedDetail(int id) {
+    _embeddedDetailId = id;
+    notifyListeners();
+    fetchDetails(id);
+  }
+
+  void closeEmbeddedDetail() {
+    _embeddedDetailId = null;
+    clearSelected();
   }
 
   Future<int?> submitReclamation({
