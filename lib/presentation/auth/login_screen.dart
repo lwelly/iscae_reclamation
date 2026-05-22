@@ -45,8 +45,8 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
     final wide = MediaQuery.sizeOf(context).width >= 960;
 
     return Scaffold(
-      // Empêche l'interface de bouger ou de scroller quand le clavier sort
-      resizeToAvoidBottomInset: false,
+      // Changé à true pour permettre l'adaptation de l'espace de dessin avec le clavier
+      resizeToAvoidBottomInset: true,
       body: Row(
         children: [
           if (wide) const Expanded(flex: 5, child: AuthBrandingPanel()),
@@ -60,33 +60,38 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
               ),
               child: SafeArea(
                 child: Center(
-                  child: Padding(
-                    // Réduction des paddings sur mobile pour gagner de la place de base
+                  // SOLUTION ANTI-OVERFLOW : On enveloppe dans un scroll pour absorber les bannières d'erreurs et le clavier
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
                     padding: EdgeInsets.symmetric(horizontal: wide ? 24 : 16, vertical: wide ? 32 : 12),
                     child: AuthFormCard(
-                      // Padding interne de la Card réduit sur mobile pour éviter l'overflow
-                      padding: EdgeInsets.symmetric(horizontal: wide ? 36 : 20, vertical: wide ? 40 : 16),
+                      // Padding interne de la Card ajusté
+                      padding: EdgeInsets.symmetric(horizontal: wide ? 36 : 20, vertical: wide ? 40 : 20),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min, // Ajustement au contenu
+                        mainAxisSize: MainAxisSize.min, // Ajustement strict au contenu
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (!wide) ...[
-                            // Un logo légèrement plus compact sur mobile (64 au lieu de 72)
                             const Center(child: AuthLogoCircle(size: 64, imageSize: 56, onLightBackground: true)),
                             const SizedBox(height: 8),
                             const Center(
                               child: Text(
                                 'ISCAE Réclamations',
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: IscaeColors.green,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16), // Réduit de 28 à 16
+                            const SizedBox(height: 16),
                           ],
-                          if (_step == _LoginStep.login) _buildLoginForm(wide) else _buildDeviceOtpForm(wide),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 250),
+                            child: _step == _LoginStep.login
+                                ? _buildLoginForm(wide)
+                                : _buildDeviceOtpForm(wide),
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             '© ${DateTime.now().year} ISCAE — Tous droits réservés',
@@ -108,8 +113,8 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
 
   Widget _buildFormHeader({required IconData icon, required String title, required String subtitle, bool warning = false, required bool wide}) {
     return Column(
+      key: ValueKey(title),
       children: [
-        // Icône plus petite sur mobile (52 au lieu de 64) pour gratter des pixels précieux
         Container(
           width: wide ? 64 : 52,
           height: wide ? 64 : 52,
@@ -140,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
 
   Widget _buildLoginForm(bool wide) {
     return Column(
+      key: const ValueKey('login_form'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildFormHeader(
@@ -148,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           subtitle: 'Connectez-vous à votre espace',
           wide: wide,
         ),
-        SizedBox(height: wide ? 32 : 16), // Espacement réduit sur mobile
+        SizedBox(height: wide ? 32 : 16),
         const AuthFieldLabel('Matricule ou Email'),
         AuthTextField(
           controller: _loginController,
@@ -165,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           obscure: !_showPwd,
           enabled: !_loading,
           suffix: IconButton(
-            icon: Icon(_showPwd ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey),
+            icon: Icon(_showPwd ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Colors.grey, size: 20),
             onPressed: () => setState(() => _showPwd = !_showPwd),
           ),
         ),
@@ -173,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
         Align(
           alignment: Alignment.centerRight,
           child: SizedBox(
-            height: 32, // Contraint la hauteur du bouton texte pour économiser du layout
+            height: 32,
             child: TextButton.icon(
               onPressed: _loading ? null : () => Navigator.pushNamed(context, '/forgot-password'),
               icon: const Icon(Icons.help_outline, size: 13, color: IscaeColors.green),
@@ -185,8 +191,9 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
           ),
         ),
         if (_errorMsg.isNotEmpty) ...[
+          const SizedBox(height: 4),
           AuthErrorBanner(message: _errorMsg, onClose: () => setState(() => _errorMsg = '')),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
         ],
         Theme(
           data: Theme.of(context).copyWith(
@@ -236,6 +243,7 @@ class _LoginScreenState extends State<LoginScreen> with ResendCooldownMixin {
 
   Widget _buildDeviceOtpForm(bool wide) {
     return Column(
+      key: const ValueKey('otp_form'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildFormHeader(
